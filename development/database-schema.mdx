@@ -1,0 +1,329 @@
+---
+title: Database schema documentation
+description: Complete database schema reference for MyDiary
+---
+
+MyDiary uses MySQL as its primary database. The schema is managed through Laravel migrations located in `database/migrations/`.
+
+## Schema overview
+
+The database consists of the following core tables:
+
+- **users** - User accounts and profiles
+- **entries** - Diary entries
+- **friend_requests** - Friend request management
+- **entry_users** - Shared diary entries (many-to-many)
+- **image_users** - User profile pictures
+- **image_entries** - Entry image attachments
+- **likes** - Entry likes/reactions
+- **sessions** - Active user sessions
+- **password_reset_tokens** - Password reset functionality
+
+## Entity relationship diagram
+
+```
+┌──────────┐       ┌───────────────┐       ┌──────────┐
+│  users   │──────<│friend_requests│>──────│  users   │
+└────┬─────┘       └───────────────┘       └──────────┘
+     │
+     │ 1:N
+     │
+┌────▼─────────┐
+│image_users   │
+└──────────────┘
+     │
+     │ 1:N
+     │
+┌────▼─────┐       ┌──────────────┐
+│ entries  │──────<│ entry_users  │>────── users
+└────┬─────┘       └──────────────┘
+     │
+     │ 1:N
+     │
+     ├──────────┐
+     │          │
+┌────▼────────┐ │
+│image_entries│ │
+└─────────────┘ │
+                │
+           ┌────▼────┐
+           │  likes  │
+           └─────────┘
+```
+
+## Tables
+
+### users
+
+Stores user account information and profile settings.
+
+**Migration:** `0001_01_01_000000_create_users_table.php`
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | bigint unsigned | PRIMARY KEY, AUTO_INCREMENT | User unique identifier |
+| name | varchar(255) | NOT NULL | User's display name |
+| email | varchar(255) | NOT NULL, UNIQUE | User's email address |
+| password | varchar(255) | NOT NULL | Hashed password |
+| admin | boolean | DEFAULT false | Admin privilege flag |
+| colorConfiguration | varchar(255) | NULLABLE | Custom color theme preference |
+| created_at | timestamp | NULLABLE | Account creation timestamp |
+| updated_at | timestamp | NULLABLE | Last update timestamp |
+
+**Relationships:**
+- Has many `entries` (as creator)
+- Has many `friend_requests` (as sender or receiver)
+- Has many `image_users` (profile pictures)
+- Has many `likes`
+- Belongs to many `entries` through `entry_users` (shared entries)
+
+### entries
+
+Stores diary entry content and metadata.
+
+**Migration:** `2025_05_21_013634_create_entries_table.php`
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | bigint unsigned | PRIMARY KEY, AUTO_INCREMENT | Entry unique identifier |
+| body | text | NOT NULL | Entry content/text |
+| visibility | varchar(255) | NOT NULL | Visibility level: 'public', 'private', or 'friends' |
+| creator_id | bigint unsigned | FOREIGN KEY → users.id, ON DELETE CASCADE | Entry author |
+| created_at | timestamp | NULLABLE | Entry creation timestamp |
+| updated_at | timestamp | NULLABLE | Last update timestamp |
+
+**Indexes:**
+- Foreign key on `creator_id`
+
+**Relationships:**
+- Belongs to `users` (creator)
+- Has many `image_entries`
+- Has many `likes`
+- Belongs to many `users` through `entry_users` (shared with)
+
+**Visibility levels:**
+- `private` - Only visible to creator
+- `public` - Visible to everyone
+- `friends` - Visible to friends only
+
+### friend_requests
+
+Manages friend connections between users.
+
+**Migration:** `2025_05_21_013616_create_friend_requests_table.php` (updated by `2025_07_12_223135_add_change_variables_in_friend_requests.php`)
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | bigint unsigned | PRIMARY KEY, AUTO_INCREMENT | Request unique identifier |
+| status | varchar(255) | NOT NULL | Request status: 'pending', 'accepted', or 'rejected' |
+| send_at | datetime | NOT NULL | Request sent timestamp |
+| response_at | datetime | NULLABLE | Request response timestamp |
+| sender_id | bigint unsigned | FOREIGN KEY → users.id, ON DELETE CASCADE | User who sent request |
+| recived_id | bigint unsigned | FOREIGN KEY → users.id, ON DELETE CASCADE | User who received request |
+
+**Indexes:**
+- Foreign key on `sender_id`
+- Foreign key on `recived_id`
+
+**Relationships:**
+- Belongs to `users` (sender)
+- Belongs to `users` (receiver)
+
+**Status values:**
+- `pending` - Awaiting response
+- `accepted` - Friend request accepted
+- `rejected` - Friend request rejected
+
+### entry_users
+
+Pivot table for sharing diary entries with specific users.
+
+**Migration:** `2025_05_21_013654_create_entry_users_table.php`
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | bigint unsigned | PRIMARY KEY, AUTO_INCREMENT | Relation unique identifier |
+| entry_id | bigint unsigned | FOREIGN KEY → entries.id, ON DELETE CASCADE | Shared entry |
+| user_id | bigint unsigned | FOREIGN KEY → users.id, ON DELETE CASCADE | User with access |
+| created_at | timestamp | NULLABLE | Share timestamp |
+| updated_at | timestamp | NULLABLE | Last update timestamp |
+
+**Indexes:**
+- Foreign key on `entry_id`
+- Foreign key on `user_id`
+
+**Relationships:**
+- Belongs to `entries`
+- Belongs to `users`
+
+### image_users
+
+Stores user profile pictures.
+
+**Migration:** `2025_05_21_013722_create_image_users_table.php`
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | bigint unsigned | PRIMARY KEY, AUTO_INCREMENT | Image unique identifier |
+| name | varchar(255) | NOT NULL | Image filename |
+| path | varchar(255) | NOT NULL | Storage path |
+| selected | boolean | DEFAULT true | Currently active profile picture |
+| user_id | bigint unsigned | FOREIGN KEY → users.id, ON DELETE CASCADE | Image owner |
+| created_at | timestamp | NULLABLE | Upload timestamp |
+| updated_at | timestamp | NULLABLE | Last update timestamp |
+
+**Indexes:**
+- Foreign key on `user_id`
+
+**Relationships:**
+- Belongs to `users`
+
+**Note:** Users can have multiple profile pictures, but only one is `selected` at a time.
+
+### image_entries
+
+Stores images attached to diary entries.
+
+**Migration:** `2025_05_21_013732_create_image_entries_table.php`
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | bigint unsigned | PRIMARY KEY, AUTO_INCREMENT | Image unique identifier |
+| name | varchar(255) | NOT NULL | Image filename |
+| path | varchar(255) | NOT NULL | Storage path |
+| entry_id | bigint unsigned | FOREIGN KEY → entries.id, ON DELETE CASCADE | Associated entry |
+| created_at | timestamp | NULLABLE | Upload timestamp |
+| updated_at | timestamp | NULLABLE | Last update timestamp |
+
+**Indexes:**
+- Foreign key on `entry_id`
+
+**Relationships:**
+- Belongs to `entries`
+
+### likes
+
+Tracks user reactions/likes on diary entries.
+
+**Migration:** `2025_05_21_013929_create_likes_table.php`
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | bigint unsigned | PRIMARY KEY, AUTO_INCREMENT | Like unique identifier |
+| type | varchar(255) | NOT NULL | Reaction type (e.g., 'like', 'love') |
+| entry_id | bigint unsigned | FOREIGN KEY → entries.id, ON DELETE CASCADE | Liked entry |
+| user_id | bigint unsigned | FOREIGN KEY → users.id, ON DELETE CASCADE | User who liked |
+| created_at | timestamp | NULLABLE | Like timestamp |
+| updated_at | timestamp | NULLABLE | Last update timestamp |
+
+**Indexes:**
+- Foreign key on `entry_id`
+- Foreign key on `user_id`
+
+**Relationships:**
+- Belongs to `entries`
+- Belongs to `users`
+
+### sessions
+
+Laravel session storage table.
+
+**Migration:** `0001_01_01_000000_create_users_table.php`
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | varchar(255) | PRIMARY KEY | Session unique identifier |
+| user_id | bigint unsigned | NULLABLE, INDEX | Authenticated user ID |
+| ip_address | varchar(45) | NULLABLE | Client IP address |
+| user_agent | text | NULLABLE | Client user agent |
+| payload | longtext | NOT NULL | Serialized session data |
+| last_activity | integer | NOT NULL, INDEX | Unix timestamp of last activity |
+
+**Indexes:**
+- Index on `user_id`
+- Index on `last_activity`
+
+### password_reset_tokens
+
+Stores password reset tokens.
+
+**Migration:** `0001_01_01_000000_create_users_table.php`
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| email | varchar(255) | PRIMARY KEY | User email address |
+| token | varchar(255) | NOT NULL | Reset token hash |
+| created_at | timestamp | NULLABLE | Token creation timestamp |
+
+## Cascade behaviors
+
+All foreign key relationships use `ON DELETE CASCADE` and `ON UPDATE CASCADE`, meaning:
+
+- Deleting a user will delete all their entries, friend requests, images, and likes
+- Deleting an entry will delete all associated images, likes, and sharing relationships
+- This maintains referential integrity automatically
+
+## Database conventions
+
+### Naming conventions
+
+- Table names: plural, snake_case (e.g., `friend_requests`)
+- Column names: snake_case (e.g., `created_at`)
+- Primary keys: `id`
+- Foreign keys: `{table_singular}_id` (e.g., `user_id`)
+- Pivot tables: alphabetical order (e.g., `entry_users`)
+
+### Timestamps
+
+Most tables include Laravel's automatic timestamps:
+- `created_at` - Set when record is created
+- `updated_at` - Updated when record is modified
+
+## Querying examples
+
+### Get all public entries with creator and images
+
+```php
+$entries = Entry::with(['creator', 'image_entry'])
+    ->where('visibility', 'public')
+    ->orderBy('created_at', 'desc')
+    ->get();
+```
+
+### Get user's friends
+
+```php
+$friends = FriendRequest::where('status', 'accepted')
+    ->where(function($query) use ($userId) {
+        $query->where('sender_id', $userId)
+              ->orWhere('recived_id', $userId);
+    })
+    ->get();
+```
+
+### Get entries shared with a user
+
+```php
+$sharedEntries = $user->entries()  // via entry_users pivot
+    ->with(['creator', 'image_entry'])
+    ->get();
+```
+
+## Migration files
+
+All migrations are located in `database/migrations/`:
+
+- `0001_01_01_000000_create_users_table.php`
+- `2025_05_21_013616_create_friend_requests_table.php`
+- `2025_05_21_013634_create_entries_table.php`
+- `2025_05_21_013654_create_entry_users_table.php`
+- `2025_05_21_013722_create_image_users_table.php`
+- `2025_05_21_013732_create_image_entries_table.php`
+- `2025_05_21_013929_create_likes_table.php`
+- `2025_07_12_223135_add_change_variables_in_friend_requests.php`
+
+## Next steps
+
+- Review the [architecture overview](/development/architecture)
+- Explore [frontend components](/development/frontend-components)
+- Set up your [development environment](/development/setup)

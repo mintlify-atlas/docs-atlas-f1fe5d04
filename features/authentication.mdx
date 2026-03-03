@@ -1,0 +1,149 @@
+---
+title: Authentication
+description: Learn how MyDiary's authentication system works including registration, login, logout, and session management
+---
+
+MyDiary provides a secure authentication system built on Laravel's authentication framework, allowing users to create accounts, sign in, and manage their sessions.
+
+## How authentication works
+
+The authentication system uses email and password credentials with secure session management. All passwords are hashed using bcrypt before storage, and sessions are regenerated on login to prevent session fixation attacks.
+
+## Registration
+
+New users can create an account by providing their name, email, and password.
+
+<Steps>
+  <Step title="Navigate to sign up">
+    Click the "Sign Up" or "Sign In" button on the landing page to access the registration form.
+  </Step>
+  
+  <Step title="Fill in your details">
+    Provide the following information:
+    - **Name**: Your display name (automatically capitalized)
+    - **Email**: A valid email address (must be unique)
+    - **Password**: Minimum 6 characters
+    - **Confirm Password**: Must match your password
+  </Step>
+  
+  <Step title="Submit and auto-login">
+    Click "Sign Up" to create your account. You'll be automatically logged in and redirected to your diary home page.
+  </Step>
+</Steps>
+
+<Note>
+  If the email address is already registered, you'll receive an error message: "email_already_exist". Please use a different email or proceed to login.
+</Note>
+
+### Validation rules
+
+The registration form enforces the following validation:
+
+- **Email**: Required, must be valid email format
+- **Name**: Required
+- **Password**: Required, minimum 6 characters
+- **Password Confirmation**: Required, must match password field
+
+## Login
+
+Existing users can sign in using their email and password credentials.
+
+<Steps>
+  <Step title="Access login page">
+    Navigate to the login page from the main landing page.
+  </Step>
+  
+  <Step title="Enter credentials">
+    Provide your registered email address and password.
+  </Step>
+  
+  <Step title="Submit">
+    Click "Login" to authenticate. On success, you'll be redirected to your diary home page.
+  </Step>
+</Steps>
+
+<Warning>
+  If your credentials are incorrect, you'll see an "error_credentials" message. Double-check your email and password and try again.
+</Warning>
+
+### Session security
+
+When you successfully log in:
+- Your session is regenerated with a new session ID
+- Session tokens are refreshed to prevent session hijacking
+- You remain logged in until you explicitly log out or your session expires
+
+## Logout
+
+You can securely end your session at any time.
+
+<Steps>
+  <Step title="Click logout">
+    Find and click the "Logout" button in your navigation menu.
+  </Step>
+  
+  <Step title="Session cleared">
+    Your session will be:
+    - Invalidated on the server
+    - Token regenerated
+    - Authentication cleared
+    
+    You'll be redirected to the main landing page.
+  </Step>
+</Steps>
+
+## Session management
+
+MyDiary implements secure session handling to protect your account:
+
+### Session regeneration
+
+Sessions are regenerated at critical points:
+- After successful login
+- After logout
+- When switching between user accounts (admin feature)
+
+### Authentication middleware
+
+Protected routes require active authentication. If you try to access diary features while logged out, you'll be redirected to the login page.
+
+<Accordion title="Technical implementation details">
+  MyDiary's authentication is implemented in `UserController.php` with the following methods:
+  
+  - **Registration**: `singIn()` method validates input, checks for duplicate emails, hashes passwords with bcrypt, and auto-logs in new users
+  - **Login**: `login()` method uses Laravel's Auth facade with credential verification and session regeneration
+  - **Logout**: `logout()` method invalidates sessions and regenerates CSRF tokens
+  - **Session Security**: All authentication routes regenerate session tokens to prevent CSRF attacks
+  
+  Password hashing uses Laravel's `Hash::make()` which implements bcrypt with automatic salt generation.
+</Accordion>
+
+## Best practices
+
+<Info>
+  **Security tips for your account:**
+  
+  - Use a strong password with at least 6 characters (longer is better)
+  - Don't share your password with others
+  - Always log out when using shared or public computers
+  - Your password is never stored in plain text—it's securely hashed
+</Info>
+
+## Common issues
+
+<AccordionGroup>
+  <Accordion title="Can't register with my email">
+    If you see "email_already_exist", this email is already registered. Try logging in instead, or use a different email address.
+  </Accordion>
+  
+  <Accordion title="Login fails with correct credentials">
+    Ensure:
+    - Your email is exactly as registered (check for typos)
+    - Your password is correct (passwords are case-sensitive)
+    - Your account was successfully created
+  </Accordion>
+  
+  <Accordion title="Unexpectedly logged out">
+    Sessions may expire after a period of inactivity. Simply log in again to continue using MyDiary.
+  </Accordion>
+</AccordionGroup>

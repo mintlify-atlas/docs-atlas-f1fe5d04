@@ -1,0 +1,422 @@
+---
+title: Installation and setup
+description: Complete guide to installing and configuring MyDiary for local development or production deployment.
+---
+
+## Prerequisites
+
+Before installing MyDiary, ensure you have the following installed on your system:
+
+<CardGroup cols={2}>
+  <Card title="PHP 8.2 or higher" icon="php">
+    Required for Laravel 12 framework
+  </Card>
+  <Card title="Composer" icon="box">
+    PHP dependency manager for Laravel packages
+  </Card>
+  <Card title="Node.js 18+" icon="node-js">
+    JavaScript runtime for React and Vite
+  </Card>
+  <Card title="MySQL 5.7+" icon="database">
+    Relational database for data storage
+  </Card>
+</CardGroup>
+
+### Additional requirements
+
+- **npm** or **yarn** - Package manager for JavaScript dependencies
+- **Git** - Version control to clone the repository
+- **Web server** - Apache or Nginx for production deployment
+
+<Warning>
+  MyDiary requires PHP 8.2 or higher due to Laravel 12's requirements. Ensure your PHP version meets this requirement before proceeding.
+</Warning>
+
+## Installation
+
+Follow these steps to set up MyDiary on your local machine.
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the MyDiary repository to your local machine:
+    
+    ```bash
+    git clone https://github.com/yourusername/MyDiary.git
+    cd MyDiary
+    ```
+  </Step>
+  
+  <Step title="Install PHP dependencies">
+    Use Composer to install all Laravel and PHP packages:
+    
+    ```bash
+    composer install
+    ```
+    
+    This installs key dependencies including:
+    - Laravel Framework 12
+    - Inertia.js Laravel adapter
+    - Ziggy for route generation
+    - Laravel Tinker for debugging
+  </Step>
+  
+  <Step title="Install JavaScript dependencies">
+    Install React, Vite, and frontend packages:
+    
+    ```bash
+    npm install
+    ```
+    
+    Key packages installed:
+    - React 19 and React DOM
+    - Inertia.js React adapter
+    - Tailwind CSS 4.0
+    - Vite 6 and Laravel Vite plugin
+    - HugeIcons for UI icons
+  </Step>
+  
+  <Step title="Configure environment variables">
+    Copy the example environment file and configure it:
+    
+    ```bash
+    cp .env.example .env
+    ```
+    
+    Update the `.env` file with your configuration:
+    
+    ```bash
+    APP_NAME=MyDiary
+    APP_ENV=local
+    APP_DEBUG=true
+    APP_URL=http://localhost:8000
+
+    # Database Configuration
+    DB_CONNECTION=mysql
+    DB_HOST=127.0.0.1
+    DB_PORT=3306
+    DB_DATABASE=mydiary
+    DB_USERNAME=root
+    DB_PASSWORD=your_password
+
+    # Session Configuration
+    SESSION_DRIVER=database
+    QUEUE_CONNECTION=database
+    CACHE_STORE=database
+    ```
+    
+    <Note>
+      MyDiary uses database-based sessions, cache, and queues by default. Ensure your database is properly configured.
+    </Note>
+  </Step>
+  
+  <Step title="Generate application key">
+    Generate a unique encryption key for your application:
+    
+    ```bash
+    php artisan key:generate
+    ```
+    
+    This creates a secure `APP_KEY` in your `.env` file used for encrypting session data and other sensitive information.
+  </Step>
+  
+  <Step title="Create the database">
+    Create a MySQL database for MyDiary:
+    
+    ```sql
+    CREATE DATABASE mydiary CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    ```
+    
+    Or use your database management tool (phpMyAdmin, TablePlus, etc.).
+  </Step>
+  
+  <Step title="Run database migrations">
+    Execute migrations to create all required tables:
+    
+    ```bash
+    php artisan migrate
+    ```
+    
+    This creates the following tables:
+    - `users` - User accounts and authentication
+    - `entries` - Diary entries with body, visibility, and creator
+    - `friend_requests` - Friend connections with status tracking
+    - `entry_users` - Pivot table for shared entries
+    - `image_entries` - Image attachments for entries
+    - `image_users` - Profile images for users
+    - `likes` - User engagement on entries
+    - `sessions` - Session storage
+    - `cache` - Cache storage
+    - `jobs` - Queue jobs
+    
+    <Tip>
+      If you encounter migration errors, ensure your database user has the necessary privileges to create tables and foreign keys.
+    </Tip>
+  </Step>
+  
+  <Step title="Create storage symlink">
+    Link the public storage directory for file uploads:
+    
+    ```bash
+    php artisan storage:link
+    ```
+    
+    This creates a symbolic link from `public/storage` to `storage/app/public`, allowing uploaded images to be publicly accessible.
+  </Step>
+  
+  <Step title="Build frontend assets">
+    Compile React and CSS assets:
+    
+    <CodeGroup>
+    ```bash Development
+    npm run dev
+    ```
+    
+    ```bash Production
+    npm run build
+    ```
+    </CodeGroup>
+    
+    For development, `npm run dev` starts Vite's development server with hot module replacement (HMR).
+  </Step>
+  
+  <Step title="Start the development server">
+    Launch the Laravel development server:
+    
+    ```bash
+    php artisan serve
+    ```
+    
+    The application will be available at `http://localhost:8000`.
+    
+    <Note>
+      Keep both `php artisan serve` and `npm run dev` running in separate terminal windows during development.
+    </Note>
+  </Step>
+</Steps>
+
+## Quick start script
+
+MyDiary includes a convenient development script that starts all services simultaneously:
+
+```bash
+composer dev
+```
+
+This single command runs:
+- PHP development server (`php artisan serve`)
+- Queue listener for background jobs
+- Laravel Pail for real-time logs
+- Vite development server (`npm run dev`)
+
+All services run in parallel with color-coded output for easy monitoring.
+
+## Database schema overview
+
+Understanding the database structure helps you work with MyDiary effectively.
+
+### Entries table
+
+```php
+// Migration: create_entries_table.php
+Schema::create('entries', function (Blueprint $table) {
+    $table->id();
+    $table->text('body');
+    $table->string('visibility'); // 'public', 'private', or 'friends'
+    
+    $table->unsignedBigInteger('creator_id');
+    $table->foreign('creator_id')
+        ->references('id')->on('users')
+        ->onDelete('cascade');
+    
+    $table->timestamps();
+});
+```
+
+### Friend requests table
+
+```php
+// Migration: create_friend_requests_table.php
+Schema::create('friend_requests', function (Blueprint $table) {
+    $table->id();
+    $table->string('status'); // 'pending', 'accepted', 'rejected'
+    $table->dateTime('send_at');
+    $table->dateTime('response_at')->nullable();
+    
+    $table->unsignedBigInteger('sender_id');
+    $table->foreign('sender_id')
+        ->references('id')->on('users')
+        ->onDelete('cascade');
+    
+    $table->unsignedBigInteger('recived_id');
+    $table->foreign('recived_id')
+        ->references('id')->on('users')
+        ->onDelete('cascade');
+});
+```
+
+### Relationships
+
+MyDiary uses Eloquent relationships for clean database queries:
+
+```php
+// User.php
+public function entries()
+{
+    return $this->hasMany(Entry::class, 'creator_id');
+}
+
+public function friendsS() // Sent requests
+{
+    return $this->belongsToMany(User::class, 'friend_requests', 
+        'sender_id', 'recived_id')
+        ->withPivot('response_at', 'send_at', 'status');
+}
+
+public function friendsR() // Received requests
+{
+    return $this->belongsToMany(User::class, 'friend_requests', 
+        'recived_id', 'sender_id')
+        ->withPivot('response_at', 'send_at', 'status');
+}
+```
+
+## Seeding test data (optional)
+
+Populate your database with test data for development:
+
+```bash
+php artisan db:seed
+```
+
+This runs the `EntrySeeder` and `DatabaseSeeder` to create sample users and diary entries.
+
+<Warning>
+  Only run seeders in development environments. Never seed production databases as it may create unwanted test data.
+</Warning>
+
+## Production deployment
+
+When deploying to production, follow these additional steps:
+
+<Steps>
+  <Step title="Set environment to production">
+    Update your `.env` file:
+    
+    ```bash
+    APP_ENV=production
+    APP_DEBUG=false
+    ```
+  </Step>
+  
+  <Step title="Optimize the application">
+    Run optimization commands:
+    
+    ```bash
+    php artisan config:cache
+    php artisan route:cache
+    php artisan view:cache
+    composer install --optimize-autoloader --no-dev
+    ```
+  </Step>
+  
+  <Step title="Build production assets">
+    Compile and minify frontend assets:
+    
+    ```bash
+    npm run build
+    ```
+  </Step>
+  
+  <Step title="Configure web server">
+    Point your web server's document root to the `public` directory.
+    
+    Example Nginx configuration:
+    
+    ```nginx
+    server {
+        listen 80;
+        server_name yourdomain.com;
+        root /path/to/mydiary/public;
+
+        add_header X-Frame-Options "SAMEORIGIN";
+        add_header X-Content-Type-Options "nosniff";
+
+        index index.php;
+
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+            fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+            include fastcgi_params;
+        }
+    }
+    ```
+  </Step>
+  
+  <Step title="Set up queue worker">
+    Configure a process manager like Supervisor to keep the queue worker running:
+    
+    ```bash
+    php artisan queue:work --tries=3
+    ```
+  </Step>
+  
+  <Step title="Configure file permissions">
+    Ensure proper permissions for storage and cache:
+    
+    ```bash
+    chmod -R 775 storage bootstrap/cache
+    chown -R www-data:www-data storage bootstrap/cache
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### Common issues and solutions
+
+<AccordionGroup>
+  <Accordion title="Class not found errors">
+    Run `composer dump-autoload` to regenerate the autoload files.
+  </Accordion>
+  
+  <Accordion title="SQLSTATE[HY000] [2002] Connection refused">
+    Check your database credentials in `.env` and ensure MySQL is running.
+  </Accordion>
+  
+  <Accordion title="Vite manifest not found">
+    Ensure you've run `npm run dev` or `npm run build` to generate frontend assets.
+  </Accordion>
+  
+  <Accordion title="419 Page Expired (CSRF token mismatch)">
+    Clear your browser cache and application cache:
+    ```bash
+    php artisan cache:clear
+    php artisan config:clear
+    ```
+  </Accordion>
+  
+  <Accordion title="Image uploads not working">
+    Verify the storage symlink exists:
+    ```bash
+    php artisan storage:link
+    ```
+    Check that `storage/app/public` directory has write permissions.
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+Your MyDiary installation is complete! Here's what to do next:
+
+- Create your first user account at `/SingIn`
+- Explore the codebase in `/app` and `/resources/js`
+- Review the [API reference](/api/auth/register) for backend endpoints
+- Read the [development guide](/development/setup) for contribution guidelines
+
+<Tip>
+  Join our community to get help, share ideas, and contribute to making MyDiary better!
+</Tip>

@@ -1,0 +1,104 @@
+---
+title: Login
+description: Authenticate a user and create a session
+---
+
+## Authenticate a user
+
+This endpoint authenticates a user using their email and password credentials.
+
+```bash
+POST /Login/initial
+```
+
+### Request parameters
+
+<ParamField body="email" type="string" required>
+  The user's email address
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  The user's password
+</ParamField>
+
+### Request example
+
+```bash
+curl -X POST https://api.mydiary.com/Login/initial \
+  -H "Content-Type: application/json" \
+  -c cookies.txt \
+  -d '{
+    "email": "john@example.com",
+    "password": "securepass123"
+  }'
+```
+
+### Response
+
+<ResponseField name="redirect" type="string">
+  Redirects to the home session page upon successful authentication
+</ResponseField>
+
+<ResponseField name="session" type="object">
+  A new session is created and the session ID is returned in a cookie
+</ResponseField>
+
+### Success response
+
+Upon successful authentication, a new session is created and the user is redirected to the home session.
+
+**Status Code:** `302 Found`
+
+**Location:** `/Home`
+
+**Set-Cookie:** Session cookie with regenerated session ID
+
+### Session management
+
+When a user successfully logs in:
+
+1. The provided credentials (email and password) are verified against the database
+2. If valid, a new session is created
+3. The session is regenerated for security purposes
+4. The user is redirected to the home session page
+5. Subsequent requests must include the session cookie for authentication
+
+### Error responses
+
+#### Invalid credentials
+
+Returned when the email or password is incorrect.
+
+**Status Code:** `302 Found`
+
+**Location:** `/Login` (redirects back to login form)
+
+**Session Message:** `error_credentials`
+
+```json
+{
+  "message": "error_credentials"
+}
+```
+
+#### Missing credentials
+
+Returned when email or password is not provided.
+
+**Status Code:** `422 Unprocessable Entity`
+
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "email": ["The email field is required."],
+    "password": ["The password field is required."]
+  }
+}
+```
+
+### Security
+
+- Passwords are hashed using bcrypt before storage
+- Sessions are regenerated on successful login to prevent session fixation attacks
+- Failed login attempts redirect back to the login form with an error message

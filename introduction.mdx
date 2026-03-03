@@ -1,0 +1,128 @@
+---
+title: Introduction to MyDiary
+description: A social diary application for couples and individuals to share memories, connect with friends, and keep their moments private or public.
+---
+
+## Welcome to MyDiary
+
+MyDiary is a modern social diary application that combines the intimacy of personal journaling with the connectivity of social sharing. Built with Laravel and React, it empowers users to capture their daily moments, share them with loved ones, and build meaningful connections through shared experiences.
+
+<CardGroup cols={2}>
+  <Card
+    title="Quick start"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get started with MyDiary in minutes - from account creation to your first diary entry
+  </Card>
+  <Card
+    title="Installation guide"
+    icon="code"
+    href="/installation"
+  >
+    Set up the development environment and deploy your own MyDiary instance
+  </Card>
+  <Card
+    title="API reference"
+    icon="book-open"
+    href="/api/auth/register"
+  >
+    Explore the complete API documentation for developers
+  </Card>
+  <Card
+    title="Development"
+    icon="wrench"
+    href="/development/setup"
+  >
+    Learn about the architecture and contribute to MyDiary
+  </Card>
+</CardGroup>
+
+## Key features
+
+### Privacy-focused diary entries
+
+Create diary entries with flexible visibility controls. Each entry supports:
+- **Public entries** - Visible to all your friends
+- **Private entries** - Only visible to you
+- **Shared entries** - Choose specific friends to share with
+- **Image attachments** - Add photos to capture visual memories
+
+```php
+$entry = new Entry();
+$entry->body = $request->body;
+$entry->visibility = $request->visibilityValue; // 'public', 'private', or 'friends'
+$entry->creator_id = Auth::user()->id;
+$entry->save();
+```
+
+### Social connections
+
+Build your network through a comprehensive friend system:
+- Send and receive friend requests
+- Accept or reject incoming requests
+- View friends' public diary entries
+- Search for users by name or email
+- Manage your friend list
+
+<Note>
+  Friend requests support pending, accepted, and rejected states with timestamps for full audit trails.
+</Note>
+
+### Rich media support
+
+Enhance your diary entries with images:
+- Upload photos with each entry
+- Automatic image storage and retrieval
+- Update or remove images from existing entries
+- Secure file handling through Laravel's storage system
+
+### Interactive engagement
+
+Engage with your friends' content:
+- Like diary entries to show appreciation
+- View who liked your entries
+- Real-time feed of friends' public entries
+- Chronological timeline of shared memories
+
+## Technology stack
+
+MyDiary is built with modern web technologies:
+
+- **Backend**: Laravel 12 with PHP 8.2+
+- **Frontend**: React 19 with Inertia.js
+- **Styling**: Tailwind CSS 4.0
+- **Database**: MySQL with Eloquent ORM
+- **Build Tool**: Vite 6
+- **Icons**: HugeIcons React library
+
+<Tip>
+  The application uses Inertia.js to create a seamless single-page application experience without building a separate API.
+</Tip>
+
+## Database architecture
+
+MyDiary uses a relational database structure with the following core tables:
+
+| Table | Purpose |
+|-------|----------|
+| `users` | User accounts and authentication |
+| `entries` | Diary entries with body, visibility, and creator |
+| `friend_requests` | Friend connections with status tracking |
+| `entry_users` | Pivot table for shared entries |
+| `image_entries` | Image attachments for diary entries |
+| `image_users` | Profile images for users |
+| `likes` | User engagement on entries |
+
+## Get started
+
+Ready to begin? Choose your path:
+
+<CardGroup cols={2}>
+  <Card title="I'm a user" icon="user" href="/quickstart">
+    Start creating diary entries and connecting with friends
+  </Card>
+  <Card title="I'm a developer" icon="code" href="/installation">
+    Set up the development environment and explore the codebase
+  </Card>
+</CardGroup>

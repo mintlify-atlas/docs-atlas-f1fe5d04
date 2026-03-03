@@ -1,0 +1,326 @@
+---
+title: Technical architecture overview
+description: Understanding MyDiary's technical architecture and stack
+---
+
+MyDiary is built using a modern full-stack architecture combining Laravel 12 on the backend with React 19 and Inertia.js on the frontend.
+
+## Technology stack
+
+### Backend
+
+- **Laravel 12.0** - PHP framework for web applications
+- **PHP 8.2+** - Server-side programming language
+- **MySQL** - Relational database management system
+- **Inertia.js Laravel Adapter** - Server-side adapter for Inertia.js
+
+### Frontend
+
+- **React 19.0** - JavaScript library for building user interfaces
+- **Inertia.js React Adapter** - Client-side adapter for Inertia.js
+- **Tailwind CSS 4.0** - Utility-first CSS framework
+- **Vite 6.0** - Frontend build tool and dev server
+- **Hugeicons React** - Icon library for UI elements
+
+### Development tools
+
+- **Laravel Pail** - Real-time log viewer
+- **Laravel Pint** - PHP code style formatter
+- **Laravel Sail** - Docker development environment
+- **Concurrently** - Run multiple npm commands concurrently
+- **Axios** - HTTP client for API requests
+
+## Architecture overview
+
+### Monolithic SPA architecture
+
+MyDiary uses a monolithic Single Page Application (SPA) architecture powered by Inertia.js:
+
+```
+┌─────────────────────────────────────────────┐
+│               Frontend (React)              │
+│  - React 19 Components                      │
+│  - Inertia.js Client                        │
+│  - Tailwind CSS Styling                     │
+└──────────────────┬──────────────────────────┘
+                   │
+                   │ Inertia Protocol
+                   │ (JSON responses)
+                   │
+┌──────────────────▼──────────────────────────┐
+│           Backend (Laravel 12)              │
+│  - Controllers                              │
+│  - Models (Eloquent ORM)                    │
+│  - Routes                                   │
+│  - Middleware                               │
+└──────────────────┬──────────────────────────┘
+                   │
+                   │ Eloquent ORM
+                   │
+┌──────────────────▼──────────────────────────┐
+│            Database (MySQL)                 │
+│  - Users                                    │
+│  - Entries                                  │
+│  - Friend Requests                          │
+│  - Images                                   │
+│  - Likes                                    │
+└─────────────────────────────────────────────┘
+```
+
+### What is Inertia.js?
+
+Inertia.js allows you to build SPAs without building an API. It works by:
+
+1. Laravel controllers return Inertia responses instead of views
+2. Inertia sends JSON data to the frontend
+3. React components render the data without page reloads
+4. Form submissions and navigation use Inertia's client-side routing
+
+## Directory structure
+
+### Backend structure
+
+```
+app/
+├── Http/
+│   └── Controllers/          # Application controllers
+│       ├── ViewController.php     # Main views
+│       ├── UserController.php     # User authentication
+│       ├── EntryController.php    # Diary entries
+│       ├── FriendRequestsController.php
+│       ├── ImageUserController.php
+│       ├── ImageEntryController.php
+│       └── LikeController.php
+├── Models/                   # Eloquent models
+└── ...
+
+database/
+├── migrations/               # Database migrations
+└── seeders/                  # Database seeders
+
+routes/
+├── web.php                   # Web routes
+└── console.php              # Console routes
+```
+
+### Frontend structure
+
+```
+resources/js/
+├── app.jsx                   # Inertia.js setup
+├── bootstrap.js              # Axios configuration
+├── Layout/
+│   └── Layout.jsx           # Main layout wrapper
+├── Pages/                    # Page components
+│   ├── Home/
+│   │   ├── Home.jsx
+│   │   └── Main.jsx
+│   ├── AuthPages/
+│   │   ├── Login.jsx
+│   │   └── SingIn.jsx
+│   └── Friends/
+│       └── Friends.jsx
+└── components/               # Reusable components
+    ├── NavBar/
+    ├── SideBar/
+    ├── Entry/
+    ├── Button/
+    ├── Input/
+    ├── Modals/
+    ├── Loader/
+    ├── DropFile/
+    └── alerts/
+```
+
+## Core concepts
+
+### Server-side rendering flow
+
+1. User navigates to a route (e.g., `/Home`)
+2. Laravel router matches the route in `routes/web.php`
+3. Controller method handles the request
+4. Controller returns Inertia response with data
+5. Inertia sends page component and props to React
+6. React renders the component with the provided data
+
+### Client-side navigation
+
+```jsx
+import { Link } from '@inertiajs/react'
+
+// Inertia handles navigation without page reload
+<Link href={route('homeSession')}>Home</Link>
+```
+
+### Form handling
+
+```jsx
+import { useForm } from '@inertiajs/react'
+
+const { data, post, processing } = useForm()
+
+// Inertia handles form submission
+post(route('create.entry'), {
+  onSuccess: () => console.log('Success!')
+})
+```
+
+### Route helper (Ziggy)
+
+Ziggy provides JavaScript access to Laravel named routes:
+
+```jsx
+// Instead of hardcoding URLs
+<Link href="/Home">Home</Link>
+
+// Use route helper
+<Link href={route('homeSession')}>Home</Link>
+```
+
+## Authentication flow
+
+1. User submits login form via `Login.jsx`
+2. Inertia posts to `UserController@login`
+3. Laravel authenticates user and creates session
+4. User is redirected to authenticated area
+5. Middleware protects authenticated routes
+
+### Authentication middleware
+
+Routes in `routes/web.php` use Laravel's `auth` middleware:
+
+```php
+Route::middleware('auth')->group(function() {
+    // Protected routes
+});
+```
+
+## Data flow example
+
+Here's how creating a diary entry works:
+
+1. User fills form in React component
+2. Component uses `useForm()` hook from Inertia
+3. Form posts to `/Entry` route
+4. `EntryController@create` handles the request
+5. Controller validates and saves to database
+6. Controller returns Inertia response
+7. React component updates without page reload
+
+**Controller (Laravel):**
+
+```php
+public function create(Request $request)
+{
+    $validated = $request->validate([
+        'body' => 'required',
+        'visibility' => 'required'
+    ]);
+    
+    Entry::create($validated);
+    
+    return redirect()->route('homeSession');
+}
+```
+
+**Component (React):**
+
+```jsx
+const { data, post, processing } = useForm({
+    body: '',
+    visibility: 'private'
+})
+
+const submit = (e) => {
+    e.preventDefault()
+    post(route('create.entry'))
+}
+```
+
+## Asset compilation
+
+Vite compiles frontend assets defined in `vite.config.js`:
+
+```javascript
+export default defineConfig({
+    plugins: [
+        laravel({
+            input: 'resources/js/app.jsx',
+            refresh: true,
+        }),
+        react(),
+        tailwindcss(),
+    ],
+})
+```
+
+### Development mode
+
+```bash
+npm run dev  # Hot module replacement
+```
+
+### Production build
+
+```bash
+npm run build  # Optimized production build
+```
+
+## Queue system
+
+MyDiary uses Laravel's queue system with database driver:
+
+- Queue connection: `database` (configured in `.env`)
+- Jobs table: `jobs`
+- Failed jobs table: `failed_jobs`
+
+Process queued jobs:
+
+```bash
+php artisan queue:listen --tries=1
+```
+
+## Session management
+
+- Driver: `database` (configured in `.env`)
+- Sessions table: `sessions`
+- Lifetime: 120 minutes
+- Tracks: user_id, IP address, user agent
+
+## File storage
+
+Uploaded files (profile pictures, entry images) are stored in:
+
+- Storage path: `storage/app/public/`
+- Public symlink: `public/storage/`
+- Access via: `/storage/path/to/file.jpg`
+
+## API structure
+
+MyDiary currently doesn't expose a separate REST API. All interactions use Inertia.js protocol, which provides:
+
+- Automatic CSRF protection
+- Session-based authentication
+- JSON responses for AJAX requests
+- Traditional form submissions fallback
+
+## Performance considerations
+
+- **Eager loading**: Use Eloquent eager loading to prevent N+1 queries
+- **Caching**: Database cache driver configured
+- **Asset optimization**: Vite bundles and minifies assets
+- **Database indexing**: Foreign keys and commonly queried fields
+
+## Security features
+
+- **CSRF protection**: Built into Laravel forms and Inertia
+- **Password hashing**: Bcrypt with configurable rounds
+- **SQL injection prevention**: Eloquent ORM parameterized queries
+- **XSS protection**: React escapes output by default
+- **Session security**: HTTP-only cookies, secure connections
+
+## Next steps
+
+- Explore the [database schema](/development/database-schema)
+- Learn about [frontend components](/development/frontend-components)
+- Review [developer setup guide](/development/setup)

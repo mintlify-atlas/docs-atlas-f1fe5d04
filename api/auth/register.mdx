@@ -1,0 +1,93 @@
+---
+title: Register
+description: Create a new user account
+---
+
+## Create a new user account
+
+This endpoint allows you to register a new user in the MyDiary application.
+
+```bash
+POST /SingIn/create
+```
+
+### Request parameters
+
+<ParamField body="name" type="string" required>
+  The user's full name
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  The user's email address. Must be a valid email format and unique in the system.
+</ParamField>
+
+<ParamField body="password" type="string" required>
+  The user's password. Must be at least 6 characters long.
+</ParamField>
+
+<ParamField body="passwordConfirm" type="string" required>
+  Password confirmation. Must match the password field.
+</ParamField>
+
+### Request example
+
+```bash
+curl -X POST https://api.mydiary.com/SingIn/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "securepass123",
+    "passwordConfirm": "securepass123"
+  }'
+```
+
+### Response
+
+<ResponseField name="redirect" type="string">
+  Redirects to the home session page upon successful registration and automatic login
+</ResponseField>
+
+### Success response
+
+Upon successful registration, the user is automatically logged in and redirected to the home session.
+
+**Status Code:** `302 Found`
+
+**Location:** `/Home`
+
+### Error responses
+
+#### Validation error
+
+Returned when request parameters fail validation.
+
+**Status Code:** `422 Unprocessable Entity`
+
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "email": ["The email field is required."],
+    "password": ["The password must be at least 6 characters."],
+    "passwordConfirm": ["The passwordConfirm and password must match."]
+  }
+}
+```
+
+#### Email already exists
+
+Returned when the email is already registered in the system.
+
+**Status Code:** `302 Found`
+
+**Location:** `/SingIn`
+
+**Session Message:** `email_already_exist`
+
+### Validation rules
+
+- **name**: Required field
+- **email**: Required, must be a valid email format
+- **password**: Required, minimum 6 characters
+- **passwordConfirm**: Required, must match the password field exactly

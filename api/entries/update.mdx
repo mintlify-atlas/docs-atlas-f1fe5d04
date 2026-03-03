@@ -1,0 +1,103 @@
+---
+title: Update entry
+description: Update an existing diary entry with authorization checks
+---
+
+## Update entry
+
+Updates an existing diary entry. Only the creator of the entry can perform updates. Supports updating text content, visibility, image attachments, and friend sharing.
+
+### Endpoint
+
+```
+POST /Update/Entry/{entry}
+```
+
+### Authentication
+
+This endpoint requires authentication via the `auth` middleware. Additionally, the authenticated user must be the creator of the entry to perform updates.
+
+### Path parameters
+
+<ParamField path="entry" type="integer" required>
+  The ID of the entry to update. Laravel route model binding automatically resolves this to an Entry instance.
+</ParamField>
+
+### Request parameters
+
+<ParamField body="body" type="string">
+  The updated text content of the diary entry.
+</ParamField>
+
+<ParamField body="visibilityValue" type="string">
+  The updated visibility setting for the entry.
+</ParamField>
+
+<ParamField body="file" type="file">
+  An optional image file to replace the existing attachment. If a new file is uploaded, the previous image (if any) will be deleted from storage and replaced with the new one.
+</ParamField>
+
+<ParamField body="friend" type="array">
+  An optional array of friend user IDs to share this entry with. This will sync the friend associations, replacing any previous sharing settings.
+</ParamField>
+
+### Authorization
+
+The endpoint checks if the authenticated user is the creator of the entry:
+
+```php
+if($entry->creator->id != Auth::user()->id) {
+    return redirect()->back()->with('message', 'not_your_entry');
+}
+```
+
+If the user is not the creator, they receive a `not_your_entry` error message.
+
+### Response
+
+On successful update, the user is redirected to the home session with an update confirmation message.
+
+<ResponseField name="message" type="string">
+  Returns `update_entry` on successful entry update.
+</ResponseField>
+
+<ResponseField name="entry.id" type="integer">
+  The unique identifier of the updated entry.
+</ResponseField>
+
+<ResponseField name="entry.body" type="string">
+  The updated text content of the entry.
+</ResponseField>
+
+<ResponseField name="entry.visibility" type="string">
+  The updated visibility setting of the entry.
+</ResponseField>
+
+<ResponseField name="entry.updated_at" type="timestamp">
+  The timestamp when the entry was last updated.
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X POST https://api.mydiary.com/Update/Entry/42 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "body=Updated: Today was an incredible day!" \
+  -F "visibilityValue=private" \
+  -F "file=@/path/to/new_photo.jpg" \
+  -F "friend[]=789"
+```
+
+### Image handling
+
+The update endpoint handles image attachments with three scenarios:
+
+1. **New file uploaded**: If a new file is provided, any existing image is deleted from storage and the database, then the new image is stored and associated with the entry.
+
+2. **File explicitly removed**: If no file is uploaded and the `file` input is explicitly empty, any existing image is deleted.
+
+3. **No change**: If no file parameter is sent, the existing image remains unchanged.
+
+### Friend sharing
+
+The `sync()` method is used to update friend associations, which replaces all previous associations with the new set of friend IDs provided in the request.

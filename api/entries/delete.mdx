@@ -1,0 +1,65 @@
+---
+title: Delete entry
+description: Delete a diary entry with authorization and cascade deletion
+---
+
+## Delete entry
+
+Deletes an existing diary entry. Only the creator of the entry can perform deletion. This operation will cascade delete associated records.
+
+### Endpoint
+
+```
+DELETE /Delete/Entry/{entry}
+```
+
+### Authentication
+
+This endpoint requires authentication via the `auth` middleware. Additionally, the authenticated user must be the creator of the entry to perform deletion.
+
+### Path parameters
+
+<ParamField path="entry" type="integer" required>
+  The ID of the entry to delete. Laravel route model binding automatically resolves this to an Entry instance.
+</ParamField>
+
+### Authorization
+
+The endpoint verifies that the authenticated user is the creator of the entry:
+
+```php
+if($entry->creator->id != Auth::user()->id) {
+    return redirect()->back()->with('message', 'not_your_entry');
+}
+```
+
+If the user is not the creator, they receive a `not_your_entry` error message and the deletion is prevented.
+
+### Response
+
+On successful deletion, the user is redirected back with a confirmation message.
+
+<ResponseField name="message" type="string">
+  Returns `delete_entry` on successful entry deletion.
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X DELETE https://api.mydiary.com/Delete/Entry/42 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Cascade deletion
+
+When an entry is deleted, the following associated records are also removed:
+
+- **Image attachments**: Any `ImageEntry` records associated with the entry
+- **Friend associations**: Entries in the `entry_users` pivot table
+- **Likes**: Any `Like` records associated with the entry
+
+These cascade deletions are handled automatically through Laravel's Eloquent relationships and database foreign key constraints.
+
+### Error handling
+
+If the authenticated user attempts to delete an entry they did not create, the request is rejected with the `not_your_entry` message, and the user is redirected back to the previous page.

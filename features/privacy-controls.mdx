@@ -1,0 +1,284 @@
+---
+title: Privacy controls
+description: Control who can see your diary entries with visibility settings and friend-based sharing
+---
+
+MyDiary gives you complete control over who can view your personal diary entries. Every entry has a visibility setting that determines its privacy level, and you can share specific entries with selected friends.
+
+## How privacy works
+
+Privacy in MyDiary operates on two levels:
+
+1. **Visibility setting**: A property on each entry that defines the general access level
+2. **Friend sharing**: Explicit selection of which friends can view an entry
+
+Both controls work together to protect your privacy while enabling selective sharing.
+
+<Note>
+  Privacy settings are applied per entry, not globally. This means you can have some entries completely private and others shared with friends—it's your choice for each piece of content.
+</Note>
+
+## Visibility settings
+
+Every diary entry has a visibility property that you set when creating or editing the entry.
+
+### Available visibility levels
+
+The visibility field is stored as a string in the database and can be set to:
+
+<Tabs>
+  <Tab title="Private">
+    **Private entries** are visible only to you, the creator.
+    
+    - Only you can see the entry in your diary
+    - Friends cannot view it, even if they're selected in the sharing list
+    - Ideal for personal thoughts you don't want to share
+    
+    This is the most restrictive privacy level.
+  </Tab>
+  
+  <Tab title="Friends">
+    **Friends-only entries** are visible to you and selected friends.
+    
+    - You can choose which friends to share with
+    - Only friends you explicitly select can view the entry
+    - Other users cannot see it
+    
+    Perfect for sharing moments with trusted connections.
+  </Tab>
+  
+  <Tab title="Public">
+    **Public entries** may be visible to a wider audience (depending on your app's configuration).
+    
+    - Exact behavior depends on your MyDiary instance settings
+    - Could be visible to all users or on public feeds
+    - Use cautiously for non-sensitive content
+    
+    Check with your app administrator for public entry policies.
+  </Tab>
+</Tabs>
+
+<Warning>
+  Always review your visibility setting before saving an entry. Once published, your entry will be visible according to its privacy level. You can change it later by editing the entry.
+</Warning>
+
+## Setting entry visibility
+
+Control who can see each entry when you create or edit it.
+
+<Steps>
+  <Step title="Choose visibility level">
+    When creating or editing an entry, find the visibility dropdown or radio buttons in the form.
+  </Step>
+  
+  <Step title="Select your privacy preference">
+    Pick one of the available options:
+    - Private (only you)
+    - Friends (selected friends)
+    - Public (wider audience)
+  </Step>
+  
+  <Step title="Configure friend sharing (if applicable)">
+    If you chose "Friends" visibility, select which specific friends can view this entry from your friends list.
+  </Step>
+  
+  <Step title="Save the entry">
+    Your privacy settings are saved with the entry. The visibility value is stored in the `visibility` field of the database.
+  </Step>
+</Steps>
+
+### Changing visibility later
+
+You can update an entry's visibility at any time:
+
+1. Edit the entry
+2. Change the visibility setting
+3. Update or remove friend selections if needed
+4. Save your changes
+
+The new privacy settings take effect immediately.
+
+## Friend-based sharing
+
+For entries with "Friends" visibility, you control exactly which friends can see the content.
+
+### How friend sharing works
+
+<Steps>
+  <Step title="Select friends">
+    When creating or editing an entry with Friends visibility, you'll see your friends list with checkboxes or a multi-select field.
+  </Step>
+  
+  <Step title="Choose specific friends">
+    Select one or more friends who should have access to this entry. You can choose:
+    - Individual friends
+    - Multiple friends
+    - All friends
+    - Or none (entry stays private even with Friends visibility)
+  </Step>
+  
+  <Step title="Friends gain access">
+    Selected friends can now:
+    - View the entry in their feed or shared entries section
+    - See the full content including text and images
+    - Like the entry (if likes are enabled)
+    
+    They cannot edit or delete your entry.
+  </Step>
+</Steps>
+
+### Managing shared friends
+
+<Info>
+  When you edit an entry, the friend sharing list is synchronized:
+  - **Adding friends**: They immediately gain access to the entry
+  - **Removing friends**: They immediately lose access to the entry
+  - **Unfriending**: If you remove someone from your friends list entirely, they lose access to all entries shared with them
+</Info>
+
+### Friend sharing database structure
+
+Friend sharing is managed through the `entry_users` pivot table:
+
+- **entry_id**: The diary entry being shared
+- **user_id**: The friend who has access
+- Each row grants one friend access to one entry
+
+<Accordion title="How sync works">
+  When you update an entry's shared friends:
+  
+  1. **Create operation**: Uses `attach()` to add selected friends to the entry
+  2. **Update operation**: Uses `sync()` to synchronize the list—adds new friends, removes deselected friends
+  3. **Delete operation**: Cascades automatically when an entry is deleted, revoking all sharing
+  
+  This ensures the database always reflects your current sharing preferences.
+</Accordion>
+
+## Privacy best practices
+
+<AccordionGroup>
+  <Accordion title="Default to private">
+    When in doubt, keep entries private. You can always change to a less restrictive setting later, but you can't unsee content once shared.
+  </Accordion>
+  
+  <Accordion title="Review before sharing">
+    Before setting an entry to Friends or Public, reread it to ensure you're comfortable with others viewing the content.
+  </Accordion>
+  
+  <Accordion title="Be selective with friend sharing">
+    Just because someone is your friend doesn't mean they need access to every entry. Share selectively based on content relevance and sensitivity.
+  </Accordion>
+  
+  <Accordion title="Audit your shared entries">
+    Periodically review your entries and their sharing settings. You may want to make old entries more private or stop sharing with certain friends.
+  </Accordion>
+  
+  <Accordion title="Understand public visibility">
+    If your MyDiary instance supports public entries, understand exactly who can see them before using this setting. Public often means anyone on the internet.
+  </Accordion>
+</AccordionGroup>
+
+## What friends can see
+
+When you share an entry with friends, they have specific access:
+
+### Friends can:
+
+- View the complete entry text (body)
+- See any attached images
+- View creation and update timestamps
+- See that you're the creator
+- Like the entry (if enabled)
+
+### Friends cannot:
+
+- Edit your entry content
+- Delete your entry
+- Change visibility settings
+- Modify the shared friends list
+- Claim ownership of the entry
+
+<Note>
+  Only you, as the creator, can modify or delete your entries. Friend access is read-only with optional interaction features like likes.
+</Note>
+
+## Privacy and entry lifecycle
+
+Privacy controls apply throughout an entry's lifecycle:
+
+<Tabs>
+  <Tab title="Creation">
+    Set initial visibility and friend sharing when creating the entry. This determines who can see it immediately upon publication.
+  </Tab>
+  
+  <Tab title="Updates">
+    Change visibility and friend sharing when editing. Updates take effect immediately:
+    - Making an entry more private revokes access
+    - Making it less private grants new access
+  </Tab>
+  
+  <Tab title="Deletion">
+    When you delete an entry, all sharing records are automatically deleted. Friends lose access instantly, and the content is gone permanently.
+  </Tab>
+</Tabs>
+
+## Ownership and permissions
+
+Privacy is enforced at the ownership level:
+
+- **You own** all entries you create (stored as `creator_id`)
+- **Only owners** can change visibility settings
+- **System enforces** ownership checks before allowing updates
+- **Attempting to modify** someone else's entry results in an error
+
+<Warning>
+  The system verifies that `Auth::user()->id` matches `entry->creator->id` before allowing any privacy changes. You cannot modify privacy settings on entries you don't own.
+</Warning>
+
+## Privacy in the database
+
+<Accordion title="Technical implementation details">
+  Privacy controls are implemented across multiple database tables and controller methods:
+  
+  **Entries table:**
+  - `visibility` column stores the privacy level as a string
+  - `creator_id` foreign key establishes ownership
+  
+  **Entry_users pivot table:**
+  - Links entries to users who have shared access
+  - `entry_id` and `user_id` create the sharing relationship
+  - Cascade deletion removes sharing when entry or user is deleted
+  
+  **Controller enforcement:**
+  - `EntryController@create()`: Sets visibility and attaches selected friends on creation
+  - `EntryController@update()`: Verifies ownership, updates visibility, syncs friend sharing
+  - Authorization checks prevent unauthorized privacy modifications
+  
+  **Access control:**
+  - Visibility is checked when displaying entries
+  - Only entries you created or were shared with appear in your views
+  - Friend relationships must be accepted (status='accepted') for sharing to work
+</Accordion>
+
+## Common privacy scenarios
+
+<AccordionGroup>
+  <Accordion title="Sharing with specific friends only">
+    Set visibility to "Friends" and select only the friends you want to see this entry. Deselect or don't select friends who shouldn't have access.
+  </Accordion>
+  
+  <Accordion title="Completely private journaling">
+    Set all entries to "Private" visibility. They'll only be visible to you, regardless of friend selections.
+  </Accordion>
+  
+  <Accordion title="Revoking access after sharing">
+    Edit the entry and either:
+    - Change visibility to "Private"
+    - Remove specific friends from the sharing list
+    - Both changes save immediately
+  </Accordion>
+  
+  <Accordion title="Sharing with all current friends">
+    When creating an entry with "Friends" visibility, select all friends from your list. Note: future friends won't automatically get access—you'd need to edit the entry to add them.
+  </Accordion>
+</AccordionGroup>

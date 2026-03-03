@@ -1,0 +1,88 @@
+---
+title: Create entry
+description: Create a new diary entry with optional image upload and friend sharing
+---
+
+## Create entry
+
+Creates a new diary entry for the authenticated user. Supports uploading an image attachment and sharing the entry with specific friends.
+
+### Endpoint
+
+```
+POST /Entry
+```
+
+### Authentication
+
+This endpoint requires authentication via the `auth` middleware. Users must be logged in to create entries.
+
+### Request parameters
+
+<ParamField body="body" type="string" required>
+  The main text content of the diary entry. This field is required and cannot be empty.
+</ParamField>
+
+<ParamField body="visibilityValue" type="string">
+  Controls the visibility of the entry. Determines who can see this diary entry.
+</ParamField>
+
+<ParamField body="file" type="file">
+  An optional image file to attach to the entry. The file will be stored in the `uploads` directory. Accepted formats include common image types (JPEG, PNG, etc.).
+</ParamField>
+
+<ParamField body="friend" type="array">
+  An optional array of friend user IDs to share this entry with. The entry will be associated with the specified friends.
+</ParamField>
+
+### Response
+
+On successful creation, the user is redirected to the home session with a success message.
+
+<ResponseField name="message" type="string">
+  Returns `success_entry` on successful entry creation.
+</ResponseField>
+
+<ResponseField name="entry.id" type="integer">
+  The unique identifier of the created entry.
+</ResponseField>
+
+<ResponseField name="entry.body" type="string">
+  The text content of the entry.
+</ResponseField>
+
+<ResponseField name="entry.visibility" type="string">
+  The visibility setting of the entry.
+</ResponseField>
+
+<ResponseField name="entry.creator_id" type="integer">
+  The ID of the authenticated user who created the entry.
+</ResponseField>
+
+<ResponseField name="entry.created_at" type="timestamp">
+  The timestamp when the entry was created.
+</ResponseField>
+
+<ResponseField name="entry.updated_at" type="timestamp">
+  The timestamp when the entry was last updated.
+</ResponseField>
+
+### Example request
+
+```bash
+curl -X POST https://api.mydiary.com/Entry \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "body=Today was an amazing day! Went hiking with friends." \
+  -F "visibilityValue=friends" \
+  -F "file=@/path/to/photo.jpg" \
+  -F "friend[]=123" \
+  -F "friend[]=456"
+```
+
+### Implementation details
+
+- The entry is automatically associated with the authenticated user via `creator_id`
+- If a file is uploaded, an `ImageEntry` record is created with the original filename and storage path
+- Files are stored in the `public/uploads` directory
+- Friend associations are created using the `attach()` method on the users relationship
+- Validation ensures the `body` field is present before creating the entry

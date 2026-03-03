@@ -1,0 +1,288 @@
+---
+title: Friend system
+description: Send, accept, and reject friend requests to build your MyDiary social network
+---
+
+MyDiary's friend system lets you connect with other users to share diary entries privately. The system uses a request-based model where connections must be mutually agreed upon.
+
+## How the friend system works
+
+The friend system operates on a bidirectional relationship model:
+
+- **Friend requests** can be sent to any user
+- Requests remain **pending** until the recipient responds
+- Recipients can **accept** or **reject** requests
+- Once accepted, both users become friends and can share entries
+- Either friend can **remove** the friendship at any time
+
+<Note>
+  All friend relationships are mutual—if you're friends with someone, they're automatically friends with you. There are no one-way connections.
+</Note>
+
+## Finding users
+
+Discover other MyDiary users to connect with.
+
+<Steps>
+  <Step title="Navigate to Friends page">
+    Click "Friends" or the friends icon in your navigation menu.
+  </Step>
+  
+  <Step title="Browse available users">
+    The page displays users based on your current filter:
+    - **All Users**: Everyone except yourself
+    - **My Friends**: Only users you're connected with
+    - **Pending Requests**: Users who sent you friend requests
+  </Step>
+  
+  <Step title="Search for specific users">
+    Use the search bar to find users by:
+    - Name (partial matches work)
+    - Email address
+  </Step>
+</Steps>
+
+### User list filters
+
+<Tabs>
+  <Tab title="All users (default)">
+    Shows all users except:
+    - Yourself
+    - Current friends (already connected)
+    
+    These are users you can send friend requests to.
+  </Tab>
+  
+  <Tab title="My friends (type=1)">
+    Shows only users where:
+    - Friend request status is "accepted"
+    - Either you sent the request, or they sent it to you
+    
+    This is your active friends list.
+  </Tab>
+  
+  <Tab title="Pending requests (type=2)">
+    Shows users who:
+    - Sent you a friend request
+    - Status is still "pending" (awaiting your response)
+    
+    These are requests you can accept or reject.
+  </Tab>
+</Tabs>
+
+## Sending friend requests
+
+Connect with other users by sending them friend requests.
+
+<Steps>
+  <Step title="Find the user">
+    Search for or browse to find the user you want to connect with.
+  </Step>
+  
+  <Step title="Send request">
+    Click the "Add Friend" or "+" button next to their name.
+  </Step>
+  
+  <Step title="Request sent">
+    The request is created with:
+    - Status: "pending"
+    - Send timestamp: Current date/time
+    - Sender: Your user ID
+    - Recipient: Their user ID
+    
+    You'll see a "friend_request_send" confirmation message.
+  </Step>
+  
+  <Step title="Wait for response">
+    The recipient will see your request in their "Pending Requests" list and can accept or reject it.
+  </Step>
+</Steps>
+
+<Info>
+  You can cancel a pending request you sent by clicking the button again. The request will be removed before they respond.
+</Info>
+
+## Accepting friend requests
+
+Respond to friend requests you've received from other users.
+
+<Steps>
+  <Step title="View pending requests">
+    Navigate to Friends → Pending Requests (or filter to type=2).
+  </Step>
+  
+  <Step title="Review the request">
+    You'll see:
+    - The sender's name
+    - When the request was sent
+    - Accept and Reject buttons
+  </Step>
+  
+  <Step title="Accept the request">
+    Click "Accept" or the checkmark button to become friends.
+  </Step>
+  
+  <Step title="Friendship established">
+    The request is updated:
+    - Status changes from "pending" to "accepted"
+    - Response timestamp is recorded
+    - Both users are now friends
+    
+    You can now share diary entries with each other.
+  </Step>
+</Steps>
+
+### Smart acceptance
+
+<Note>
+  If you try to send a friend request to someone who already sent you a request, MyDiary automatically accepts their existing request instead of creating a duplicate. This creates an instant friendship.
+</Note>
+
+## Rejecting friend requests
+
+Decline friend requests you don't want to accept.
+
+<Steps>
+  <Step title="Find the request">
+    Go to your Pending Requests list.
+  </Step>
+  
+  <Step title="Reject">
+    Click "Reject" or the "X" button next to the request.
+  </Step>
+  
+  <Step title="Request removed">
+    The friend request is permanently deleted from the database. The sender can send a new request in the future if desired.
+    
+    You'll see a "friend_request_rejected" message.
+  </Step>
+</Steps>
+
+<Warning>
+  Rejecting a request is permanent for that specific request. The user won't be notified, but they may notice if they check their sent requests.
+</Warning>
+
+## Managing friendships
+
+Control your existing friend connections.
+
+### Removing friends
+
+You can unfriend someone at any time:
+
+<Steps>
+  <Step title="Go to My Friends">
+    Navigate to your friends list (type=1).
+  </Step>
+  
+  <Step title="Find the friend">
+    Locate the friend you want to remove.
+  </Step>
+  
+  <Step title="Click remove">
+    Click the "Remove Friend" or unfriend button.
+  </Step>
+  
+  <Step title="Friendship ended">
+    The friendship record is deleted:
+    - You're no longer friends
+    - They can no longer see entries shared with "friends only"
+    - Either of you can send a new friend request in the future
+  </Step>
+</Steps>
+
+### Friend request states
+
+<AccordionGroup>
+  <Accordion title="Pending state">
+    A request you sent is waiting for the recipient to accept or reject. You can cancel it before they respond.
+  </Accordion>
+  
+  <Accordion title="Accepted state">
+    Both users are now friends. You can share diary entries, view each other's shared content, and like each other's posts.
+  </Accordion>
+  
+  <Accordion title="No relationship">
+    No friend request or friendship exists. Either user can send a friend request to initiate a connection.
+  </Accordion>
+</AccordionGroup>
+
+## Friend request behavior
+
+The system handles various scenarios intelligently:
+
+<Tabs>
+  <Tab title="Duplicate prevention">
+    You cannot:
+    - Send a request to someone who already sent you one (it auto-accepts instead)
+    - Send multiple pending requests to the same user
+    - Send a request to someone who's already your friend
+  </Tab>
+  
+  <Tab title="Mutual acceptance">
+    When a request is accepted:
+    - Both users immediately see each other in their friends list
+    - Both can share entries with each other
+    - The relationship is bidirectional and symmetric
+  </Tab>
+  
+  <Tab title="Request cancellation">
+    You can cancel your own pending requests:
+    - Find the user in the all users list
+    - Click the button again to remove the pending request
+    - No notification is sent to the recipient
+  </Tab>
+  
+  <Tab title="Unfriending">
+    When you remove a friend:
+    - The friendship record is deleted
+    - They lose access to your "friends only" entries
+    - You lose access to their "friends only" entries
+    - You can send a new request later if desired
+  </Tab>
+</Tabs>
+
+## Friend visibility in entries
+
+Friends are integrated with the diary entry system:
+
+- When creating or editing an entry, you can select specific friends to share with
+- Friends can only see entries you've explicitly shared with them
+- If you unfriend someone, they immediately lose access to entries shared with them
+- Your "My Friends" list shows only accepted friendships for sharing purposes
+
+<Info>
+  **Privacy tip**: Only users you've accepted as friends can be selected when sharing diary entries. Pending requests don't grant entry access.
+</Info>
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Be selective with friend requests">
+    Only connect with users you trust and want to share personal diary entries with. Your diary content is private and should only be shared with genuine friends.
+  </Accordion>
+  
+  <Accordion title="Respond to requests promptly">
+    Check your pending requests regularly and respond to them. This helps other users know if you're interested in connecting.
+  </Accordion>
+  
+  <Accordion title="Clean up your friends list">
+    If you no longer want to share with someone, remove them from your friends list. This ensures your privacy settings remain meaningful.
+  </Accordion>
+  
+  <Accordion title="Use search effectively">
+    If you know someone's name or email, use the search feature to find them quickly instead of scrolling through all users.
+  </Accordion>
+</AccordionGroup>
+
+<Accordion title="Technical implementation details">
+  The friend system is implemented in `FriendRequestsController.php` and the `User` model with the following features:
+  
+  - **Database Structure**: `friend_requests` table with sender_id, recived_id, status (pending/accepted), send_at, and response_at timestamps
+  - **Bidirectional Relations**: User model defines `friendsS()` (sent requests) and `friendsR()` (received requests) using belongsToMany
+  - **Smart Request Handling**: `friendRequest()` method checks for existing requests, friendships, and auto-accepts reciprocal requests
+  - **Request States**: Requests can be pending (awaiting response), accepted (active friendship), or non-existent (deleted/rejected)
+  - **Cascade Deletion**: When a user is deleted, all their friend requests and friendships are automatically cleaned up via foreign key constraints
+  - **Search Functionality**: Supports filtering by name and email using LIKE queries with wildcard matching
+  - **Type Filtering**: URL parameter `type` controls list display: blank=all users, 1=friends, 2=pending requests
+</Accordion>

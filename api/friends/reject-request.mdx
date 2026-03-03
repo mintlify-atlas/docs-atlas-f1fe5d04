@@ -1,0 +1,79 @@
+---
+title: Reject friend request
+description: Reject an incoming friend request from another user
+---
+
+## Endpoint
+
+```
+DELETE /Friend/Rejected/Request/{id}
+```
+
+Rejects an incoming friend request by removing it from the friend requests table. This endpoint is specifically designed to decline friend requests that other users have sent to the authenticated user.
+
+## Authentication
+
+This endpoint requires authentication. The user must be logged in to access this endpoint.
+
+## Path parameters
+
+<ParamField path="id" type="integer" required>
+  The ID of the user whose friend request you want to reject. This should be the sender of the friend request.
+</ParamField>
+
+## Behavior
+
+This endpoint removes the friend request relationship where:
+- The specified user (id) is the sender
+- The authenticated user is the receiver
+
+The endpoint uses the `friendsR()` relationship, which represents friend requests received by the authenticated user. It detaches the relationship from the `friend_requests` pivot table.
+
+## Response
+
+<ResponseField name="message" type="string">
+  Success message indicating the request was rejected. Returns `friend_request_rejected`.
+</ResponseField>
+
+## Use case
+
+This endpoint should be used when:
+- A user wants to decline an incoming friend request
+- A user wants to remove a pending request they received without accepting it
+
+This is different from the `/Friend/Request/{id}` endpoint, which handles multiple actions including accepting requests and removing friendships.
+
+## Examples
+
+### Reject a friend request
+
+```bash
+curl -X DELETE https://api.mydiary.com/Friend/Rejected/Request/456 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Response**: Rejects the friend request from user 456
+
+### Reject multiple requests
+
+```bash
+# Reject request from user 123
+curl -X DELETE https://api.mydiary.com/Friend/Rejected/Request/123 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Reject request from user 456
+curl -X DELETE https://api.mydiary.com/Friend/Rejected/Request/456 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+## Implementation details
+
+The endpoint uses Laravel's Eloquent `friendsR()` relationship:
+- `friendsR()`: Represents friend requests where the authenticated user is the receiver
+- The relationship is defined in the User model as a `belongsToMany` relationship
+- Uses the `friend_requests` pivot table with `recived_id` and `sender_id` columns
+
+When a request is rejected:
+- The entry is completely removed from the `friend_requests` table
+- No status change occurs (unlike accepting, which updates status to 'accepted')
+- The sender can send a new friend request in the future if desired

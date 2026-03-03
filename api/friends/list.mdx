@@ -1,0 +1,108 @@
+---
+title: List users
+description: Retrieve a filtered list of users based on friendship status
+---
+
+## Endpoint
+
+```
+GET /Friends/{type?}
+```
+
+Retrieves a list of users filtered by friendship status. This endpoint supports filtering by all users, accepted friends, or pending friend requests.
+
+## Authentication
+
+This endpoint requires authentication. The user must be logged in to access this endpoint.
+
+## Path parameters
+
+<ParamField path="type" type="string" optional>
+  Filter type for users list:
+  - Empty or not provided: Returns all users who are not already accepted friends
+  - `1`: Returns only accepted friends
+  - `2`: Returns only users who have sent pending friend requests to the authenticated user
+</ParamField>
+
+## Query parameters
+
+<ParamField query="search" type="string" optional>
+  Search term to filter users by name or email. Performs a case-insensitive partial match.
+</ParamField>
+
+## Response
+
+Returns a list of users matching the specified criteria.
+
+<ResponseField name="users" type="array">
+  Array of user objects matching the filter criteria
+  
+  <ResponseField name="id" type="integer">
+    User's unique identifier
+  </ResponseField>
+  
+  <ResponseField name="name" type="string">
+    User's display name
+  </ResponseField>
+  
+  <ResponseField name="email" type="string">
+    User's email address
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  The filter type that was applied (matches the input parameter)
+</ResponseField>
+
+## Filtering logic
+
+### All users (type empty)
+Returns all users except:
+- The authenticated user
+- Users who are already accepted friends (in either direction)
+
+### Accepted friends (type = 1)
+Returns users where:
+- There is an accepted friend request where the user sent the request to the authenticated user, OR
+- There is an accepted friend request where the authenticated user sent the request to the user
+
+### Pending requests (type = 2)
+Returns users who:
+- Have sent a pending friend request to the authenticated user
+
+## Examples
+
+### List all non-friends
+
+```bash
+curl -X GET https://api.mydiary.com/Friends \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### List accepted friends
+
+```bash
+curl -X GET https://api.mydiary.com/Friends/1 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### List pending friend requests
+
+```bash
+curl -X GET https://api.mydiary.com/Friends/2 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Search for users
+
+```bash
+curl -X GET "https://api.mydiary.com/Friends?search=john" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Search within accepted friends
+
+```bash
+curl -X GET "https://api.mydiary.com/Friends/1?search=jane" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```

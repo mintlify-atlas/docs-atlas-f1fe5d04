@@ -1,0 +1,585 @@
+---
+title: Frontend component structure
+description: React component architecture and organization in MyDiary
+---
+
+MyDiary's frontend is built with React 19 and organized into a clear component hierarchy. All components are located in `resources/js/`.
+
+## Component architecture
+
+### Directory structure
+
+```
+resources/js/
+├── app.jsx                   # Inertia.js application setup
+├── bootstrap.js              # Axios configuration
+├── Layout/                   # Layout components
+│   └── Layout.jsx
+├── Pages/                    # Page-level components
+│   ├── Home/
+│   │   ├── Home.jsx         # Landing page
+│   │   └── Main.jsx         # Authenticated home
+│   ├── AuthPages/
+│   │   ├── Login.jsx        # Login page
+│   │   └── SingIn.jsx       # Registration page
+│   └── Friends/
+│       └── Friends.jsx      # Friends management
+└── components/               # Reusable components
+    ├── NavBar/
+    │   └── Navbar.jsx       # Navigation bar
+    ├── SideBar/
+    │   └── Sidebar.jsx      # Sidebar navigation
+    ├── Entry/
+    │   └── Entry.jsx        # Diary entry card
+    ├── Button/
+    │   └── Button.jsx       # Button component
+    ├── Input/
+    │   └── Input.jsx        # Form input component
+    ├── Modals/
+    │   ├── ModalDelete.jsx
+    │   ├── ModalUpdate.jsx
+    │   ├── ModalUpdateEntry.jsx
+    │   └── ModalFriends.jsx
+    ├── Loader/
+    │   └── Loader.jsx       # Loading spinner
+    ├── DropFile/
+    │   └── DropFile.jsx     # File upload component
+    └── alerts/
+        ├── AlertSuccess/
+        │   └── AlertSuccess.jsx
+        └── AlertError/
+            └── AlertError.jsx
+```
+
+## Application setup
+
+### app.jsx
+
+The main entry point that configures Inertia.js:
+
+**Location:** `resources/js/app.jsx`
+
+```jsx
+import { createInertiaApp } from '@inertiajs/react'
+import { createRoot } from 'react-dom/client'
+import Layout from './Layout/Layout'
+
+createInertiaApp({
+  title: title => `${title} - My diary`,
+  resolve: name => {
+    const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true })
+    let page = pages[`./Pages/${name}.jsx`]
+    page.default.layout = page.default.layout || ((page) => <Layout children={page}/>)
+    return page
+  },
+  setup({ el, App, props }) {
+    createRoot(el).render(<App {...props} />)
+  },
+  progress: {
+    color: 'rgb(160, 81, 233)',
+    showSpinner: false,
+  }
+})
+```
+
+**Key features:**
+- Automatically wraps all pages with `Layout` component
+- Uses Vite's `import.meta.glob` for dynamic page imports
+- Configures progress bar color
+- Sets page titles with "My diary" suffix
+
+## Layout components
+
+### Layout
+
+The main application layout wrapper.
+
+**Location:** `resources/js/Layout/Layout.jsx`
+
+```jsx
+function Layout({children}) {
+    const { component } = usePage()
+    const { UsersSessions, user } = usePage().props
+    
+    const showNavBar = [
+        'AuthPages/Login',
+        'AuthPages/SingIn',
+        'Home/Home'
+    ].includes(component)
+
+    return (
+        <div className={!showNavBar ? 'main_layout' : 'main_layout_default'}>
+            {showNavBar ? <Navbar/> : <Sidebar/>}
+            <main>
+                {/* Background circles for styling */}
+                <div className='circle'></div>
+                {/* ... more circles ... */}
+                {children}
+                {/* Developer tools for local environment */}
+            </main>
+        </div>
+    )
+}
+```
+
+**Responsibilities:**
+- Conditionally renders `Navbar` or `Sidebar` based on current page
+- Provides consistent background styling
+- Includes developer tools in local environment
+- Wraps all page content
+
+## Page components
+
+### Home.jsx
+
+Landing page for unauthenticated users.
+
+**Location:** `resources/js/Pages/Home/Home.jsx`
+
+**Features:**
+- Marketing/welcome content
+- Application description
+- Entry point for new visitors
+
+### Main.jsx
+
+Authenticated user dashboard.
+
+**Location:** `resources/js/Pages/Home/Main.jsx`
+
+**Features:**
+- Displays user's diary entries
+- Entry creation form
+- Timeline view
+
+### Login.jsx & SingIn.jsx
+
+Authentication pages.
+
+**Location:** `resources/js/Pages/AuthPages/`
+
+**Features:**
+- Form validation
+- Inertia form handling
+- Error display
+- Redirect after authentication
+
+### Friends.jsx
+
+Friend management interface.
+
+**Location:** `resources/js/Pages/Friends/Friends.jsx`
+
+**Features:**
+- Search users
+- Send friend requests
+- Accept/reject requests
+- View friends list
+
+## Navigation components
+
+### Navbar
+
+Top navigation bar for public pages.
+
+**Location:** `resources/js/components/NavBar/Navbar.jsx`
+
+```jsx
+function Navbar() {
+    const { user } = usePage().props
+
+    return (
+        <nav className='navbar'>
+            <ul>
+                <li>
+                    <Link href={url()}>
+                        <img src="/assets/img/diario-de-viaje.png" alt='Logo'/>
+                        <label>My Diary</label>
+                    </Link>
+                </li>
+            </ul>
+            <ul className='menu1'>
+                <li>
+                    {user ? (
+                        <div className='links'>
+                            <Link>{ user.name}</Link>
+                            <Link href={route('logout')}>Cerrar sesión</Link>
+                        </div>
+                    ) : (
+                        <div className='logSing'>
+                            <Link href={route('login')}>Iniciar sesión</Link>
+                            <Link href={route('singInForm')}>Crear cuenta</Link>
+                        </div>
+                    )}
+                </li>
+            </ul>
+        </nav>
+    )
+}
+```
+
+### Sidebar
+
+Side navigation for authenticated users.
+
+**Location:** `resources/js/components/SideBar/Sidebar.jsx`
+
+```jsx
+function Sidebar() {
+    const { user } = usePage().props
+
+    return (
+        <nav className='sidebar'>
+            <ul>
+                <li>
+                    <Link href={route('homeSession')}>
+                        <img src='/assets/img/masLibros.png' />
+                        <label>Querido Diario</label>
+                    </Link>
+                </li>
+                <li>
+                    <Link href={route('index.friends')}>
+                        <img src='/assets/img/buscar.png' />
+                        <label>Buscar amigos</label>
+                    </Link>
+                </li>
+                {user.admin && (
+                    <li>
+                        <Link>
+                            <img src='/assets/img/ajustes.png' />
+                            <label>Administrar</label>
+                        </Link>
+                    </li>
+                )}
+            </ul>
+        </nav>
+    )
+}
+```
+
+**Features:**
+- Icon-based navigation
+- Conditional admin section
+- User profile section
+- Logout functionality
+
+## Content components
+
+### Entry
+
+Diary entry card component.
+
+**Location:** `resources/js/components/Entry/Entry.jsx`
+
+```jsx
+function Entry({entry}) {
+    const [openModal, setOpenModal] = useState(false)
+    const [openModalUpdate, setOpenModalUpdate] = useState(false)
+    const { user } = usePage().props
+
+    function image() {
+        let link = ''
+        if(entry.visibility == 'public') {
+            link = 'assets/img/public.png'
+        } else if (entry.visibility == 'private') {
+            link = 'assets/img/seguro.png'
+        } else {
+            link = 'assets/img/friends.png'
+        }
+        return <img src={link}/>
+    }
+
+    return (
+        <div className='card'>
+            <div className='title'>
+                <label>{entry.creator.name}</label>
+                <div className='buttons' style={{ 
+                    display: user.id != entry.creator.id ? 'none' : 'flex' 
+                }}>
+                    <label onClick={openModalDelete}>
+                        <img src='assets/img/eliminar.png'/>
+                    </label>
+                    <label onClick={actionOpenModalUpdate}>
+                        <img src='assets/img/editar.png'/>
+                    </label>
+                </div>
+            </div>
+            <div className='content_body'>
+                <img src={entry.creator.image_user?.path || '/assets/img/avatar.png'}/>
+                {entry.body}
+            </div>
+            <picture>
+                <img src={entry.image_entry ? `/storage/${entry.image_entry?.path}` : ''}/>
+            </picture>
+            <div className='footer'>
+                {image()}
+                {/* Formatted date */}
+            </div>
+        </div>
+    )
+}
+```
+
+**Props:**
+- `entry` - Entry object with creator, body, images, and visibility
+
+**Features:**
+- Displays entry content and metadata
+- Shows creator profile picture
+- Conditional edit/delete buttons (owner only)
+- Visibility indicator icon
+- Formatted timestamps
+- Attached image display
+- Integration with update and delete modals
+
+## Form components
+
+### Input
+
+Multi-purpose form input component.
+
+**Location:** `resources/js/components/Input/Input.jsx`
+
+```jsx
+function Input({
+    value = '', 
+    type, 
+    width, 
+    label, 
+    options = [], 
+    name, 
+    required, 
+    onchange = null, 
+    onkeyup = null, 
+    error = false, 
+    className = '', 
+    check = false
+}) {
+    // Supports: input, textarea, select, checkbox
+    return (
+        <div className={type == 'checkbox' ? 'content_check' :'content_input'}>
+            {inputType()}
+            <label>{label}</label>
+        </div>
+    )
+}
+```
+
+**Supported types:**
+- Text input
+- Textarea
+- Select dropdown
+- Checkbox
+
+**Features:**
+- Floating label animation
+- Error state styling
+- Auto-focus on label click
+- Flexible width
+- Required field validation
+
+### Button
+
+Reusable button component with loading state.
+
+**Location:** `resources/js/components/Button/Button.jsx`
+
+```jsx
+function Button({
+    text, 
+    className = 'btn-normal', 
+    width, 
+    minWidth = '270px', 
+    loading, 
+    onclick, 
+    type = 'submit'
+}) {
+    return (
+        <button
+            className={className}
+            style={{ width: width, minWidth: minWidth }}
+            onClick={onclick}
+            type={type}
+        >
+            {loading ? <Loader/> : text}
+        </button>
+    )
+}
+```
+
+**Props:**
+- `text` - Button label
+- `className` - CSS class (default: 'btn-normal')
+- `loading` - Show loader instead of text
+- `onclick` - Click handler
+- `type` - Button type (submit, button)
+
+**CSS classes:**
+- `btn-normal` - Primary button
+- `btn-disable` - Secondary/cancel button
+
+## Modal components
+
+### ModalDelete
+
+Confirmation modal for delete operations.
+
+**Location:** `resources/js/components/Modals/ModalDelete.jsx`
+
+```jsx
+function ModalDelete({ entity, openModal, div = null, title, URL }) {
+    const { delete: destroy, processing } = useForm()
+
+    function submit(e) {
+        e.preventDefault()
+        destroy(URL, {
+            onSuccess: () => setOpenModal(false)
+        })
+    }
+
+    return (
+        <div className={`content_modal modalDelete ${openModal ? 'open_content_modal' : ''}`}>
+            <form onSubmit={submit} className={`modal ${openModal ? 'open_modal' : ''}`}>
+                <div className='title'>{title}</div>
+                <div className='body'>
+                    <div dangerouslySetInnerHTML={{ __html: div }} />
+                </div>
+                <div className='footer'>
+                    <Button text='Cancelar' onclick={setOpenModal} type='button' />
+                    <Button text='Eliminar' loading={processing} type='submit' />
+                </div>
+            </form>
+        </div>
+    )
+}
+```
+
+**Props:**
+- `entity` - Object being deleted (for ID)
+- `openModal` - Boolean to show/hide
+- `title` - Modal title
+- `div` - HTML content to display
+- `URL` - Delete endpoint
+
+### ModalUpdateEntry
+
+Modal for editing diary entries.
+
+**Location:** `resources/js/components/Modals/ModalUpdateEntry.jsx`
+
+**Features:**
+- Form pre-filled with entry data
+- Inertia form handling
+- Validation errors
+- Image upload support
+
+## Utility components
+
+### Loader
+
+Loading spinner component.
+
+**Location:** `resources/js/components/Loader/Loader.jsx`
+
+**Usage:**
+```jsx
+{loading && <Loader/>}
+```
+
+### DropFile
+
+Drag-and-drop file upload component.
+
+**Location:** `resources/js/components/DropFile/DropFile.jsx`
+
+**Features:**
+- Drag and drop interface
+- File type validation
+- Image preview
+- Click to browse
+
+### Alert components
+
+Success and error notification components.
+
+**Locations:**
+- `resources/js/components/alerts/AlertSuccess/AlertSuccess.jsx`
+- `resources/js/components/alerts/AlertError/AlertError.jsx`
+
+## Using Inertia.js hooks
+
+### usePage()
+
+Access page props and metadata:
+
+```jsx
+import { usePage } from '@inertiajs/react'
+
+const { user, errors } = usePage().props
+const { component } = usePage()
+```
+
+### useForm()
+
+Manage form state and submission:
+
+```jsx
+import { useForm } from '@inertiajs/react'
+
+const { data, setData, post, processing, errors } = useForm({
+    body: '',
+    visibility: 'private'
+})
+
+const submit = (e) => {
+    e.preventDefault()
+    post(route('create.entry'))
+}
+```
+
+### Link
+
+Client-side navigation:
+
+```jsx
+import { Link } from '@inertiajs/react'
+
+<Link href={route('homeSession')}>Home</Link>
+```
+
+## Styling approach
+
+MyDiary uses a combination of:
+
+- **Tailwind CSS 4.0** - Utility classes
+- **Component CSS files** - Scoped styles in component directories
+- **CSS custom properties** - Theme colors (via `colorConfiguration`)
+
+**Example structure:**
+```
+components/Entry/
+├── Entry.jsx
+└── entry.css
+```
+
+## Props conventions
+
+- **camelCase** for prop names
+- **Descriptive names** (e.g., `openModal` not `open`)
+- **Default values** for optional props
+- **Type-specific prefixes** (e.g., `onchange`, `onclick`)
+
+## Component best practices
+
+1. **Keep components focused** - Each component has a single responsibility
+2. **Use Inertia helpers** - Leverage `useForm`, `usePage`, and `Link`
+3. **Destructure props** - For cleaner code and documentation
+4. **Co-locate styles** - Keep CSS files with components
+5. **Handle loading states** - Use `processing` from `useForm`
+6. **Show errors** - Display validation errors from Inertia
+
+## Next steps
+
+- Review the [database schema](/development/database-schema)
+- Understand the [architecture](/development/architecture)
+- Set up your [development environment](/development/setup)

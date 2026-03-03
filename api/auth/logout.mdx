@@ -1,0 +1,64 @@
+---
+title: Logout
+description: End the user session and log out
+---
+
+## End user session
+
+This endpoint logs out the authenticated user and invalidates their session.
+
+```bash
+GET /Logout
+```
+
+### Request parameters
+
+No parameters required. The endpoint uses the session cookie to identify the user.
+
+### Request example
+
+```bash
+curl -X GET https://api.mydiary.com/Logout \
+  -b cookies.txt
+```
+
+### Response
+
+<ResponseField name="redirect" type="string">
+  Redirects to the main landing page after successful logout
+</ResponseField>
+
+### Success response
+
+Upon successful logout, the session is invalidated and the user is redirected to the main page.
+
+**Status Code:** `302 Found`
+
+**Location:** `/`
+
+### Session invalidation
+
+When a user logs out, the following actions are performed:
+
+1. The user is logged out from the authentication system
+2. The current session is invalidated and all session data is cleared
+3. The CSRF token is regenerated for security
+4. The user is redirected to the main landing page
+5. Any subsequent requests with the old session cookie will be rejected
+
+### Security considerations
+
+- **Session invalidation**: The session is completely invalidated, not just the authentication state
+- **Token regeneration**: The CSRF token is regenerated to prevent any potential CSRF attacks using the old token
+- **Clean logout**: All authentication data is removed from the session
+
+### Error responses
+
+This endpoint does not return errors. Even if no user is logged in, the logout process completes successfully and redirects to the main page.
+
+### Usage notes
+
+- This is a GET request, making it suitable for simple logout links
+- No request body or parameters are needed
+- The session cookie is automatically included by the browser
+- After logout, users must log in again to access protected resources

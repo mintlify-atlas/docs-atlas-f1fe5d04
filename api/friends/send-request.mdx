@@ -1,0 +1,135 @@
+---
+title: Send friend request
+description: Send, accept, cancel, or remove friend requests with complex state management
+---
+
+## Endpoint
+
+```
+POST /Friend/Request/{id}
+```
+
+This endpoint implements a complex state machine that handles multiple friend request scenarios. The behavior depends on the current friendship status between the authenticated user and the target user.
+
+## Authentication
+
+This endpoint requires authentication. The user must be logged in to access this endpoint.
+
+## Path parameters
+
+<ParamField path="id" type="integer" required>
+  The ID of the user to interact with
+</ParamField>
+
+## Behavior based on friendship status
+
+The endpoint performs different actions based on the current relationship state:
+
+### 1. Accept incoming pending request
+
+**Condition**: The target user has sent a pending friend request to the authenticated user.
+
+**Action**: Accepts the friend request by:
+- Updating the request status from `pending` to `accepted`
+- Setting the `response_at` timestamp to the current time
+
+**Priority**: This check is performed first and takes precedence over all other actions.
+
+### 2. Remove existing friendship
+
+**Condition**: The users are already friends (accepted friend request exists in either direction).
+
+**Action**: Removes the friendship by:
+- Detaching the friend relationship from the `friend_requests` pivot table
+- Works for both directions (whether the authenticated user sent or received the original request)
+
+**Priority**: This check is performed second, after checking for incoming pending requests.
+
+### 3. Cancel outgoing pending request
+
+**Condition**: The authenticated user has already sent a pending friend request to the target user.
+
+**Action**: Cancels the friend request by:
+- Detaching the pending request from the `friend_requests` pivot table
+
+**Priority**: This check is performed third.
+
+### 4. Send new friend request
+
+**Condition**: None of the above conditions are met (no existing relationship).
+
+**Action**: Creates a new friend request by:
+- Creating a new entry in the `friend_requests` pivot table
+- Setting `status` to `pending`
+- Setting `send_at` timestamp to the current time
+
+**Priority**: This is the default action if no other conditions are met.
+
+## Response
+
+All actions return the same response structure with a success message.
+
+<ResponseField name="message" type="string">
+  Success message indicating the action was completed. Always returns `friend_request_send` regardless of which action was performed.
+</ResponseField>
+
+## State machine diagram
+
+```
+No relationship → Send new request (pending)
+Incoming pending → Accept request (accepted)
+Accepted friendship → Remove friendship (no relationship)
+Outgoing pending → Cancel request (no relationship)
+```
+
+## Examples
+
+### Send a new friend request
+
+```bash
+curl -X POST https://api.mydiary.com/Friend/Request/123 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Response**: Creates a pending friend request to user 123
+
+### Accept an incoming friend request
+
+```bash
+curl -X POST https://api.mydiary.com/Friend/Request/456 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Response**: If user 456 has sent you a pending request, it will be accepted
+
+### Cancel an outgoing friend request
+
+```bash
+curl -X POST https://api.mydiary.com/Friend/Request/789 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Response**: If you previously sent a pending request to user 789, it will be canceled
+
+### Remove an existing friendship
+
+```bash
+curl -X POST https://api.mydiary.com/Friend/Request/321 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+**Response**: If you and user 321 are already friends, the friendship will be removed
+
+## Implementation details
+
+The endpoint uses Laravel's Eloquent relationships to manage the friend requests:
+
+- `friendsS()`: Friend requests sent by the authenticated user (sender)
+- `friendsR()`: Friend requests received by the authenticated user (receiver)
+
+The `friend_requests` pivot table includes:
+- `sender_id`: ID of the user who sent the request
+- `recived_id`: ID of the user who received the request
+- `status`: Either `pending` or `accepted`
+- `send_at`: Timestamp when the request was sent
+- `response_at`: Timestamp when the request was accepted (null for pending requests)

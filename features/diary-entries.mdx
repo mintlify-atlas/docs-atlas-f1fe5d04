@@ -1,0 +1,214 @@
+---
+title: Diary entries
+description: Create, view, update, and delete your personal diary entries with text and image support
+---
+
+Diary entries are the heart of MyDiary. Each entry consists of text content, optional images, and privacy settings that control who can see your thoughts.
+
+## Creating an entry
+
+Capture your moments by creating new diary entries with text and optional image attachments.
+
+<Steps>
+  <Step title="Access the create form">
+    From your diary home page, click the "New Entry" or "+" button to open the entry creation form.
+  </Step>
+  
+  <Step title="Write your entry">
+    Enter your diary text in the body field. This is required—every entry needs content.
+  </Step>
+  
+  <Step title="Add an image (optional)">
+    Upload an image to accompany your entry by clicking the file upload button. Supported formats include common image types (JPEG, PNG, etc.).
+  </Step>
+  
+  <Step title="Set visibility">
+    Choose who can see this entry:
+    - **Private**: Only you can see it
+    - **Friends**: Shared with selected friends
+    - **Public**: Visible to all (if applicable)
+  </Step>
+  
+  <Step title="Share with friends (optional)">
+    If you're sharing with specific friends, select them from your friends list. You can choose multiple friends.
+  </Step>
+  
+  <Step title="Save your entry">
+    Click "Create Entry" or "Save" to publish. You'll see a success message and be redirected to your home page where your entry appears.
+  </Step>
+</Steps>
+
+<Note>
+  When you create an entry, it's automatically associated with your account as the creator. The creation timestamp is recorded for chronological organization.
+</Note>
+
+### Entry structure
+
+Each diary entry contains:
+
+- **Body**: The text content of your entry (required)
+- **Visibility**: Privacy setting controlling access
+- **Creator**: Your user account (automatically set)
+- **Image**: Optional photo attachment
+- **Shared friends**: List of friends who can view this entry (if visibility allows)
+- **Timestamps**: Creation and last update times
+
+## Viewing entries
+
+Your diary entries are displayed on your home page in chronological order.
+
+### Entry display includes:
+
+- Entry text content
+- Attached image (if present)
+- Creation date and time
+- Visibility indicator
+- Creator information
+- Like count (from friends)
+
+<Info>
+  You can view entries you've created as well as entries shared with you by friends, depending on their visibility settings.
+</Info>
+
+## Updating an entry
+
+You can edit your existing entries to update text, change images, or modify privacy settings.
+
+<Steps>
+  <Step title="Select entry to edit">
+    Find the entry you want to modify and click the "Edit" button or icon.
+  </Step>
+  
+  <Step title="Modify content">
+    Update any of the following:
+    - Entry body text
+    - Visibility settings
+    - Shared friends list
+  </Step>
+  
+  <Step title="Update or remove image">
+    You have three options:
+    - **Keep existing image**: Don't change the file upload
+    - **Replace image**: Upload a new file (the old image is automatically deleted)
+    - **Remove image**: Clear the file field to delete the attached image
+  </Step>
+  
+  <Step title="Save changes">
+    Click "Update" to save your modifications. You'll see an "update_entry" success message.
+  </Step>
+</Steps>
+
+<Warning>
+  You can only edit entries that you created. Attempting to edit another user's entry will result in a "not_your_entry" error message.
+</Warning>
+
+### What happens when you update
+
+<Tabs>
+  <Tab title="Text updates">
+    Changes to the body text are saved immediately. The entry's `updated_at` timestamp is refreshed.
+  </Tab>
+  
+  <Tab title="Image replacement">
+    When you upload a new image:
+    1. The old image file is deleted from server storage
+    2. The old database record is removed
+    3. New image is uploaded and stored
+    4. New database record is created with the file path
+  </Tab>
+  
+  <Tab title="Image removal">
+    When you remove an image:
+    1. The image file is deleted from server storage
+    2. The database record is removed
+    3. The entry continues without an image
+  </Tab>
+  
+  <Tab title="Friend sharing updates">
+    The shared friends list is synchronized—added friends gain access, removed friends lose access to this specific entry.
+  </Tab>
+</Tabs>
+
+## Deleting an entry
+
+Permanently remove entries you no longer want to keep.
+
+<Steps>
+  <Step title="Find the entry">
+    Locate the entry you wish to delete from your diary home page.
+  </Step>
+  
+  <Step title="Click delete">
+    Click the "Delete" button or trash icon associated with the entry.
+  </Step>
+  
+  <Step title="Confirm deletion">
+    If prompted, confirm that you want to permanently delete this entry.
+  </Step>
+  
+  <Step title="Entry removed">
+    The entry is deleted from the database along with:
+    - Associated image files and records
+    - Sharing relationships
+    - Like records
+    
+    You'll see a "delete_entry" success message.
+  </Step>
+</Steps>
+
+<Warning>
+  **Deletion is permanent!** Once you delete an entry, it cannot be recovered. Make sure you really want to remove it before confirming.
+</Warning>
+
+### Ownership protection
+
+You can only delete entries that belong to you. The system verifies that you're the creator before allowing deletion. If you try to delete someone else's entry, you'll receive a "not_your_entry" error.
+
+## Entry permissions
+
+MyDiary enforces strict ownership rules:
+
+<AccordionGroup>
+  <Accordion title="Who can create entries?">
+    Any authenticated user can create diary entries. Each entry is automatically linked to your account as the creator.
+  </Accordion>
+  
+  <Accordion title="Who can view entries?">
+    Entry visibility depends on the privacy setting:
+    - **Your entries**: You can always view all your own entries
+    - **Shared entries**: Friends can view entries explicitly shared with them
+    - **Private entries**: Only visible to the creator
+  </Accordion>
+  
+  <Accordion title="Who can edit entries?">
+    Only the creator can edit their entries. The system checks your user ID against the entry's `creator_id` before allowing modifications.
+  </Accordion>
+  
+  <Accordion title="Who can delete entries?">
+    Only the creator can delete their entries. Deletion permission is verified server-side to prevent unauthorized removal.
+  </Accordion>
+</AccordionGroup>
+
+## Best practices
+
+<Info>
+  **Tips for managing your diary:**
+  
+  - Use descriptive, meaningful content in your entries
+  - Review your visibility settings before saving
+  - Regularly back up important entries by exporting or saving elsewhere
+  - Use images to enhance your memories
+  - Update entries to correct typos or add details
+  - Clean up old entries you no longer need
+</Info>
+
+<Accordion title="Technical implementation details">
+  Diary entry functionality is implemented in `EntryController.php` with the following features:
+  
+  - **Create**: `create()` method validates body text, saves entry with visibility and creator ID, handles optional file upload, and attaches selected friends
+  - **Update**: `update()` method verifies ownership, updates content and visibility, manages image replacement/removal with file system cleanup, and syncs friend sharing
+  - **Delete**: `delete()` method verifies ownership and cascades deletion to related records (images, shares, likes)
+  - **Authorization**: All modification operations check that `Auth::user()->id` matches `entry->creator->id`
+  - **File Storage**: Images are stored in `storage/app/public/uploads` with original filenames preserved
+  - **Database Cascade**: Foreign key constraints ensure related records are cleaned up on entry deletion
+</Accordion>

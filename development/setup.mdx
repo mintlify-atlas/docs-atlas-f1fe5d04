@@ -1,0 +1,230 @@
+---
+title: Developer environment setup
+description: Set up your local development environment for MyDiary
+---
+
+This guide walks you through setting up the MyDiary application on your local machine for development.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- PHP 8.2 or higher
+- Composer
+- Node.js 18 or higher
+- npm or yarn
+- MySQL or MariaDB
+- Git
+
+## Clone the repository
+
+Clone the MyDiary repository to your local machine:
+
+```bash
+git clone https://github.com/yourusername/MyDiary.git
+cd MyDiary
+```
+
+## Install dependencies
+
+Install both PHP and JavaScript dependencies:
+
+```bash
+# Install PHP dependencies
+composer install
+
+# Install JavaScript dependencies
+npm install
+```
+
+## Configure environment variables
+
+Copy the example environment file and configure it:
+
+```bash
+cp .env.example .env
+```
+
+Update the `.env` file with your local database credentials:
+
+```env
+APP_NAME="My Diary"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=mydiary
+DB_USERNAME=root
+DB_PASSWORD=your_password
+
+SESSION_DRIVER=database
+QUEUE_CONNECTION=database
+CACHE_STORE=database
+```
+
+### Key configuration options
+
+- `APP_KEY` - Will be generated in the next step
+- `DB_DATABASE` - Create this database before running migrations
+- `SESSION_DRIVER` - Set to `database` for database-backed sessions
+- `QUEUE_CONNECTION` - Set to `database` for database queue driver
+
+## Generate application key
+
+Generate a unique application key:
+
+```bash
+php artisan key:generate
+```
+
+## Create the database
+
+Create a new MySQL database for the application:
+
+```sql
+CREATE DATABASE mydiary CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+## Run database migrations
+
+Run the migrations to create all required tables:
+
+```bash
+php artisan migrate
+```
+
+This will create the following tables:
+- `users`
+- `password_reset_tokens`
+- `sessions`
+- `friend_requests`
+- `entries`
+- `entry_users`
+- `image_users`
+- `image_entries`
+- `likes`
+- `cache`
+- `jobs`
+- `job_batches`
+- `failed_jobs`
+
+## Create storage symlink
+
+Create a symbolic link from `public/storage` to `storage/app/public`:
+
+```bash
+php artisan storage:link
+```
+
+This is required for serving uploaded images (profile pictures and entry images).
+
+## Start the development server
+
+You can start the development server using one of these methods:
+
+### Using composer script (recommended)
+
+This starts all services in parallel:
+
+```bash
+composer dev
+```
+
+This command runs:
+- Laravel development server (http://localhost:8000)
+- Queue worker
+- Laravel Pail (log viewer)
+- Vite dev server (for hot module replacement)
+
+### Manual start
+
+Alternatively, start services individually in separate terminal windows:
+
+```bash
+# Terminal 1 - Laravel server
+php artisan serve
+
+# Terminal 2 - Queue worker
+php artisan queue:listen --tries=1
+
+# Terminal 3 - Vite dev server
+npm run dev
+
+# Terminal 4 (optional) - Log viewer
+php artisan pail
+```
+
+## Access the application
+
+Once the development server is running, access the application at:
+
+- Frontend: http://localhost:8000
+- API routes: http://localhost:8000/api (if configured)
+
+## Development tools
+
+### Laravel Pail
+
+View real-time logs:
+
+```bash
+php artisan pail --timeout=0
+```
+
+### Laravel Tinker
+
+Interact with your application via REPL:
+
+```bash
+php artisan tinker
+```
+
+### Code formatting
+
+Format your code using Laravel Pint:
+
+```bash
+./vendor/bin/pint
+```
+
+## Troubleshooting
+
+### Permission issues
+
+If you encounter permission errors, ensure the storage and cache directories are writable:
+
+```bash
+chmod -R 775 storage bootstrap/cache
+```
+
+### Database connection errors
+
+Verify your database credentials in `.env` and ensure MySQL is running:
+
+```bash
+# Check MySQL status
+sudo systemctl status mysql
+
+# Start MySQL if needed
+sudo systemctl start mysql
+```
+
+### Node module issues
+
+If you encounter issues with node modules, try clearing and reinstalling:
+
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+## Next steps
+
+Now that your environment is set up, you can:
+
+- Review the [architecture overview](/development/architecture)
+- Explore the [database schema](/development/database-schema)
+- Learn about [frontend components](/development/frontend-components)

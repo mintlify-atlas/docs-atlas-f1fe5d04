@@ -1,0 +1,366 @@
+---
+title: Image uploads
+description: Attach images to your diary entries to capture visual memories
+---
+
+MyDiary allows you to enhance your diary entries with images. Each entry can have one attached image that's stored securely and displayed alongside your text content.
+
+## How image uploads work
+
+The image upload system integrates with diary entries:
+
+- Upload images when creating or editing entries
+- One image per entry (replacing the previous image if you upload a new one)
+- Images are stored in server storage and linked to your entry
+- Supported formats include common image types (JPEG, PNG, GIF, etc.)
+
+<Note>
+  Images are optional—you can create entries with text only. Adding an image is a great way to capture visual memories alongside your written thoughts.
+</Note>
+
+## Uploading an image
+
+Attach an image to a new or existing diary entry.
+
+<Steps>
+  <Step title="Access the entry form">
+    Open the create or edit form for your diary entry.
+  </Step>
+  
+  <Step title="Write your entry text">
+    Fill in the body field with your diary content. Text is required, but images are optional.
+  </Step>
+  
+  <Step title="Click upload">
+    Find the file upload button or "Add Image" field in the entry form.
+  </Step>
+  
+  <Step title="Select your image">
+    Choose an image file from your device:
+    - Common formats: JPEG, JPG, PNG, GIF, WebP
+    - Make sure the file is a valid image
+    - File size limits may apply (check with your administrator)
+  </Step>
+  
+  <Step title="Preview (if available)">
+    Some forms show a preview of your selected image before you save.
+  </Step>
+  
+  <Step title="Save the entry">
+    Click "Create" or "Update" to save your entry. The image is uploaded and stored with the following information:
+    - Original filename
+    - Storage path on the server
+    - Link to your entry
+  </Step>
+</Steps>
+
+### Upload process
+
+When you upload an image:
+
+1. **File validation**: The system checks that a file was uploaded
+2. **Storage**: Image is saved to `storage/app/public/uploads/` with a unique path
+3. **Database record**: An `ImageEntry` record is created with:
+   - `name`: Original filename (e.g., "vacation.jpg")
+   - `path`: Storage path (e.g., "uploads/abc123.jpg")
+   - `entry_id`: Link to your diary entry
+4. **Association**: The image is linked to your entry for display
+
+<Info>
+  Images are stored in Laravel's public storage disk, making them accessible for display while keeping the original files secure.
+</Info>
+
+## Viewing images
+
+Images attached to entries are displayed automatically:
+
+- **Your entries**: See your images when viewing your own diary
+- **Shared entries**: Friends can see images on entries shared with them
+- **Entry detail**: Full-size or scaled image appears with the entry text
+- **Thumbnails**: List views may show smaller previews
+
+### Image display
+
+The system retrieves images by:
+
+1. Loading the entry from the database
+2. Accessing the `imageEntry` relationship (one-to-one)
+3. Fetching the file from storage using the saved path
+4. Displaying in the UI with appropriate HTML/CSS
+
+## Updating images
+
+Replace or remove images on existing entries.
+
+### Replacing an image
+
+<Steps>
+  <Step title="Edit the entry">
+    Open the edit form for the entry with the image you want to replace.
+  </Step>
+  
+  <Step title="Upload new image">
+    Select a different image file using the file upload field.
+  </Step>
+  
+  <Step title="Old image cleanup">
+    When you save, the system automatically:
+    - Deletes the old image file from server storage
+    - Removes the old database record
+    - Uploads and saves the new image
+    - Creates a new database record
+  </Step>
+  
+  <Step title="Save changes">
+    Click "Update" to complete the replacement. Your entry now shows the new image.
+  </Step>
+</Steps>
+
+<Warning>
+  Replacing an image permanently deletes the old file. If you want to keep the original, download or save it elsewhere before uploading a replacement.
+</Warning>
+
+### Removing an image
+
+Delete an attached image without adding a replacement:
+
+<Steps>
+  <Step title="Edit the entry">
+    Open the edit form for the entry.
+  </Step>
+  
+  <Step title="Clear the image field">
+    Remove or clear the file upload field (specific UI depends on your form—may be a "Remove" button or clearing the input).
+  </Step>
+  
+  <Step title="Save without file">
+    Click "Update" with the image field empty or explicitly cleared.
+  </Step>
+  
+  <Step title="Image deleted">
+    The system:
+    - Deletes the image file from storage
+    - Removes the database record
+    - Entry continues with text only, no image
+  </Step>
+</Steps>
+
+### Keep existing image
+
+If you edit an entry but don't change the image field:
+
+- The existing image remains attached
+- No upload or deletion occurs
+- Entry retains the current image
+
+This lets you update text, visibility, or friend sharing without affecting the image.
+
+<Tabs>
+  <Tab title="Replace image">
+    Upload a new file → Old image deleted, new image saved.
+  </Tab>
+  
+  <Tab title="Remove image">
+    Clear the file field → Image deleted, entry has no image.
+  </Tab>
+  
+  <Tab title="Keep image">
+    Don't change the file field → Existing image unchanged.
+  </Tab>
+</Tabs>
+
+## Image storage and cleanup
+
+MyDiary manages image files carefully to avoid orphaned files and storage bloat.
+
+### Storage location
+
+- **Disk**: Laravel's public storage disk
+- **Directory**: `storage/app/public/uploads/`
+- **Access**: Files are accessible via public URLs for display
+- **Naming**: Laravel generates unique filenames to prevent conflicts
+
+### Automatic cleanup
+
+The system automatically deletes image files in these scenarios:
+
+<AccordionGroup>
+  <Accordion title="Entry deletion">
+    When you delete a diary entry:
+    - The database cascade deletes the `ImageEntry` record
+    - The system should clean up the file (implementation may vary)
+    - Prevents orphaned images
+  </Accordion>
+  
+  <Accordion title="Image replacement">
+    When uploading a new image to an entry:
+    - Old file is explicitly deleted from storage
+    - Old database record is removed
+    - New file and record are created
+  </Accordion>
+  
+  <Accordion title="Image removal">
+    When clearing an image field on update:
+    - File is deleted from storage
+    - Database record is removed
+    - Entry continues without an image
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  File cleanup happens automatically in the controller. You don't need to manually manage storage—the system handles it for you.
+</Note>
+
+## Image permissions
+
+Image access follows entry privacy settings:
+
+- **Owner**: You can always see images on your entries
+- **Shared friends**: Friends can see images on entries shared with them
+- **Private entries**: Images on private entries are only visible to you
+- **Modification**: Only entry creators can upload, replace, or delete images
+
+### Security considerations
+
+<Warning>
+  **Important security notes:**
+  
+  - Only upload images you own or have permission to use
+  - Images on public entries may be visible to many users
+  - Files are stored on the server—admin access may allow viewing
+  - Consider privacy before uploading sensitive or identifiable photos
+  - Images shared with friends can potentially be saved or screenshot
+</Warning>
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Optimize image size">
+    Before uploading:
+    - Resize very large images to reasonable dimensions (e.g., 1920px max width)
+    - Compress images to reduce file size
+    - Use web-friendly formats (JPEG for photos, PNG for graphics)
+    
+    This improves upload speed and reduces server storage usage.
+  </Accordion>
+  
+  <Accordion title="Use descriptive filenames">
+    Name your images meaningfully before uploading (e.g., "birthday_2026.jpg" instead of "IMG_1234.jpg"). The original name is preserved in the database and may help you identify entries later.
+  </Accordion>
+  
+  <Accordion title="Respect storage limits">
+    If your MyDiary instance has storage quotas:
+    - Don't upload unnecessarily large files
+    - Delete old entries with images you no longer need
+    - Be mindful of how many image entries you create
+  </Accordion>
+  
+  <Accordion title="Consider privacy">
+    Before attaching an image:
+    - Review who will see it based on entry visibility
+    - Avoid images with sensitive personal information
+    - Be cautious with photos containing identifiable people or locations
+  </Accordion>
+  
+  <Accordion title="Back up important images">
+    MyDiary stores your images, but:
+    - Keep local copies of irreplaceable photos
+    - Export or download images you don't want to lose
+    - Remember that deleting an entry deletes its image
+  </Accordion>
+</AccordionGroup>
+
+## Common image scenarios
+
+<Tabs>
+  <Tab title="Creating entry with image">
+    1. Write your diary text
+    2. Upload an image file
+    3. Set visibility and sharing
+    4. Save—entry appears with text and image
+  </Tab>
+  
+  <Tab title="Adding image to existing entry">
+    1. Edit an entry that has no image
+    2. Upload an image file
+    3. Save—image is now attached
+  </Tab>
+  
+  <Tab title="Updating entry text without changing image">
+    1. Edit the entry
+    2. Modify the text content
+    3. Don't touch the image field
+    4. Save—text updates, image stays the same
+  </Tab>
+  
+  <Tab title="Removing all content">
+    1. Edit or delete the entire entry
+    2. If deleting, both text and image are removed
+    3. If removing just the image, clear the file field and save
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Image won't upload">
+    Possible causes:
+    - File is too large (check size limits)
+    - Unsupported file format (use JPEG, PNG, GIF)
+    - Server storage is full (contact administrator)
+    - Network issue during upload (try again)
+  </Accordion>
+  
+  <Accordion title="Image doesn't display">
+    Possible causes:
+    - File path is broken (may require admin assistance)
+    - Storage symlink not created (Laravel setup issue)
+    - Image was deleted manually from server
+    - Browser caching issue (refresh the page)
+  </Accordion>
+  
+  <Accordion title="Can't remove image">
+    Make sure:
+    - You're the entry creator (only owners can modify)
+    - You're properly clearing the file field in the edit form
+    - The form supports image removal (UI may vary)
+  </Accordion>
+  
+  <Accordion title="Old image still shows after replacing">
+    Try:
+    - Refreshing the page (browser cache)
+    - Clearing browser cache
+    - Verifying the new image actually uploaded
+    - Checking that you clicked Save/Update
+  </Accordion>
+</AccordionGroup>
+
+<Accordion title="Technical implementation details">
+  Image upload functionality is implemented in `EntryController.php` with the following features:
+  
+  **Upload on create:**
+  - Checks if file exists: `$req->hasFile('file')`
+  - Stores file: `$file->store('uploads', 'public')` using Laravel's public disk
+  - Creates record: New `ImageEntry` with name, path, and entry_id
+  
+  **Upload on update:**
+  - Checks for new file upload
+  - If new file: Deletes old file with `unlink()`, deletes old record, stores new file, creates new record
+  - If field cleared: Deletes old file and record
+  - If unchanged: No action taken
+  
+  **File cleanup:**
+  - Manual deletion in controller using `unlink(storage_path($path))`
+  - Database record deletion via `$entry->imageEntry->delete()`
+  - Path stored in `image_entries` table: `path` column
+  
+  **Database structure:**
+  - `image_entries` table with id, name, path, entry_id, timestamps
+  - Foreign key: entry_id references entries(id) with cascade delete
+  - One-to-one relationship: Entry `hasOne` ImageEntry
+  
+  **Storage configuration:**
+  - Uses Laravel's `public` disk (configured in config/filesystems.php)
+  - Default path: storage/app/public/uploads/
+  - Requires storage:link artisan command for public access
+</Accordion>
