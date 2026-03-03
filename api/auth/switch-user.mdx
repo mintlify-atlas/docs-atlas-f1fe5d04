@@ -1,0 +1,111 @@
+---
+title: Switch user
+description: Switch to a different user account (admin/testing feature)
+---
+
+Logs out the current user and authenticates as a different user by ID. This endpoint is typically used for administrative purposes or testing.
+
+<Warning>
+  This endpoint requires authentication and should be restricted to administrators only in production environments.
+</Warning>
+
+## Endpoint
+
+```
+POST /new/auth/user/{id}
+```
+
+## Authentication
+
+Required - User must be authenticated (protected by `auth` middleware).
+
+## Path parameters
+
+<ParamField path="id" type="integer" required>
+  The ID of the user to switch to
+</ParamField>
+
+## Request example
+
+```bash
+curl -X POST https://your-domain.com/new/auth/user/5 \
+  -H "Cookie: laravel_session=your_session_cookie" \
+  -H "X-CSRF-TOKEN: your_csrf_token"
+```
+
+## Response
+
+Redirects back to the previous page with the new user's authentication session.
+
+**Status code:** `302 Found`
+
+**Headers:**
+- `Location: [previous page URL]`
+- `Set-Cookie: laravel_session=[new session]`
+
+## Behavior
+
+The endpoint performs the following actions (from `UserController.php:20-28`):
+
+```php
+public function newUserAuth(Request $req, $id)
+{
+    Auth::logout();
+    $req->session()->regenerateToken();
+    
+    Auth::loginUsingId($id);
+    
+    return redirect()->back();
+}
+```
+
+1. **Logout current user** - Terminates the current authentication session
+2. **Regenerate CSRF token** - Creates a new session token for security
+3. **Login as target user** - Authenticates using the provided user ID
+4. **Redirect** - Returns to the previous page with new authentication
+
+## Security considerations
+
+<Warning>
+  This endpoint allows account impersonation and should be carefully protected in production:
+  
+  - Add role-based authorization checks (admin-only)
+  - Log all user switches for audit trails
+  - Consider disabling in production or using a separate admin interface
+  - Implement rate limiting to prevent abuse
+</Warning>
+
+## Use cases
+
+- **Admin support** - Help users debug issues by viewing their account
+- **Testing** - Quickly switch between test user accounts during development
+- **Demos** - Switch between different user personas when demonstrating features
+
+## Error responses
+
+### 404 Not Found
+
+The specified user ID does not exist:
+
+```json
+{
+  "message": "User not found"
+}
+```
+
+### 401 Unauthorized
+
+No authenticated session exists:
+
+```json
+{
+  "message": "Unauthenticated"
+}
+```
+
+## Implementation notes
+
+- The redirect uses `redirect()->back()`, which returns the user to their previous page
+- Session tokens are regenerated to prevent session fixation attacks
+- The user ID is used directly with `Auth::loginUsingId()`, bypassing password verification
+- This endpoint does not verify permissions - implement authorization middleware in production
