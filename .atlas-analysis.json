@@ -1,0 +1,109 @@
+{
+  "projectType": "saas",
+  "projectName": "MyDiary",
+  "projectDescription": "A social diary application for couples and individuals to share thoughts, experiences, and connect with friends.",
+  "theme": "almond",
+  "primaryColor": "#9b87f5",
+  "lightColor": "#dcd3ff",
+  "darkColor": "#7c3aed",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/authentication",
+              "features/diary-entries",
+              "features/friend-system",
+              "features/privacy-controls",
+              "features/image-uploads"
+            ]
+          },
+          {
+            "group": "User Guide",
+            "pages": [
+              "guide/creating-entries",
+              "guide/managing-friends",
+              "guide/sharing-entries",
+              "guide/privacy-settings"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/setup",
+              "development/architecture",
+              "development/database-schema",
+              "development/frontend-components"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api/auth/register",
+              "api/auth/login",
+              "api/auth/logout"
+            ]
+          },
+          {
+            "group": "Entries",
+            "pages": [
+              "api/entries/create",
+              "api/entries/update",
+              "api/entries/delete"
+            ]
+          },
+          {
+            "group": "Friends",
+            "pages": [
+              "api/friends/list",
+              "api/friends/send-request",
+              "api/friends/reject-request"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "User authentication and registration",
+    "Create and manage diary entries with text and images",
+    "Friend request system with pending/accepted status",
+    "Privacy controls for entry visibility",
+    "Share entries with specific friends",
+    "Like system for entries",
+    "Image upload and management for entries",
+    "Real-time social interactions between users"
+  ],
+  "publicApiSurface": [
+    "POST /SingIn/create - User registration",
+    "POST /Login/initial - User login",
+    "GET /Logout - User logout",
+    "POST /Entry - Create diary entry",
+    "POST /Update/Entry/{entry} - Update entry",
+    "DELETE /Delete/Entry/{entry} - Delete entry",
+    "GET /Friends/{type?} - List friends/requests",
+    "POST /Friend/Request/{id} - Send/accept friend request",
+    "DELETE /Friend/Rejected/Request/{id} - Reject friend request",
+    "Entry model - body, visibility, creator_id, timestamps",
+    "User model - name, email, password, relationships",
+    "FriendRequests model - sender_id, recived_id, status, timestamps",
+    "Like model - entry likes",
+    "ImageEntry model - entry image attachments"
+  ]
+}
